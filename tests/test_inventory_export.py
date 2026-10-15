@@ -157,7 +157,7 @@ def test_sheet_page_404(inv_client):
 
 
 def test_export_zip_skips_missing_photo_and_includes_png(inv_client):
-    ok = blobs.new_photo(b"JPGDATA", "image/jpeg", "a.jpg")          # a real Blob
+    ok = blobs.new_photo(b"\xff\xd8\xffJPGDATA", "image/jpeg", "a.jpg")          # a real Blob
     gone = {"id": "b" * 32, "filename": "b.jpg", "content_type": "image/jpeg"}   # no Blob behind it
     inventory.update("inv1", {"_images": [ok, gone]})
 

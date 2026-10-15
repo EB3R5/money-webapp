@@ -315,7 +315,7 @@ def test_migration_0017_copies_income_sources(tmp_path):
         conn.commit()
     conn.close()
     db = dbmod.Database(data)
-    assert db.init() == 18
+    assert db.init() == 19
     with sqlite3.connect(db_path) as conn:
         rows = conn.execute("SELECT kind, name, category, cadence, amount, anchor_date, day_known, origin, active FROM expected_flows").fetchall()
         assert rows == [("income", "Paycheck", "Salary", "semimonthly", 2500.0, "2026-10-01", 1, "typed", 1)]

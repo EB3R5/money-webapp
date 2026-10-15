@@ -14,7 +14,7 @@ def test_sqlite_census_counts_rows_photos_and_sums(store_db):
         {"_id": "a", "Amount": -4.5, "Date": "2026-01-03"},
         {"_id": "b", "Amount": 10, "Date": "2026-01-01"},
     ])
-    e = blobs.new_photo(b"x", "image/png")
+    e = blobs.new_photo(b"\x89PNGx", "image/png")
     inventory.insert({"_id": "i1", "Item_Name": "Lamp", "_images": [e]})
     blobs.put("doc1", "document", b"%PDF", "application/pdf")
     documents.insert({"_id": "doc1", "parent_table": "inventory", "parent_id": "i1",
@@ -26,7 +26,7 @@ def test_sqlite_census_counts_rows_photos_and_sums(store_db):
     assert c["entities"]["inventory"]["rows"] == 1
     assert c["photos"] == {"entries": 1, "files": 1}
     assert c["documents"] == {"file_rows": 1, "files": 1}
-    assert c["blobs"] == {"rows": 2, "bytes": 5, "unreferenced": 0}
+    assert c["blobs"] == {"rows": 2, "bytes": 9, "unreferenced": 0}
     assert c["model"] == {"present": False, "sha256": None}
     assert c["transactions"] == {"sum_amount": 5.5, "min_date": "2026-01-01", "max_date": "2026-01-03"}
     assert "schema_version" not in c["entities"]

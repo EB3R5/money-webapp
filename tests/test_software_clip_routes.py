@@ -92,14 +92,14 @@ def test_picker_searches_software_fields(sw_client):
 
 def test_fetch_image_attaches_to_software(sw_client, monkeypatch):
     monkeypatch.setattr("app.views.inventory_clip.download_image",
-                        lambda url, referer=None: {"ok": True, "data": b"PNG", "content_type": "image/png",
+                        lambda url, referer=None: {"ok": True, "data": b"\x89PNG", "content_type": "image/png",
                                                    "filename": "rg.png"})
     r = sw_client.post("/api/software/s2/fetch-image", json={"image_urls": ["https://x/rg.png"]})
     assert r.json()["ok"] and r.json()["attached"] == 1
     doc = software.get("s2")
     assert len(doc["_images"]) == 1 and doc["_images"][0]["content_type"] == "image/png"
     img = sw_client.get("/api/software/image/" + doc["_images"][0]["id"])
-    assert img.status_code == 200 and img.content == b"PNG"
+    assert img.status_code == 200 and img.content == b"\x89PNG"
     r = sw_client.post("/api/software/nope/fetch-image", json={"image_urls": ["https://x/y.png"]})
     assert r.status_code == 404
 

@@ -186,12 +186,42 @@ def test_new_transaction_in_a_later_run(store_db):
     assert (s.txns_new, s.txns_updated) == (1, 0) and transactions.count() == 3
 
 
-def test_dry_run_writes_nothing(store_db):
+def test_dry_run_writes_only_its_run_row_and_spends_the_budget(store_db):
+    """A dry run calls the Bridge for real, so it is recorded (status dry_run) and counts
+    toward the day's budget; the ledger, the accounts and the cursor are untouched."""
     s = sf.run_sync(dry_run=True, client=client_for(), now=NOW)
-    assert s.status == "ok" and s.dry_run and s.run_id is None
+    assert s.status == "ok" and s.dry_run and s.run_id
     assert s.accounts_seen == 1 and s.txns_new == 2
-    for st in (transactions, accounts, connections, balance_history, sync_runs, sync_cursors):
+    for st in (transactions, accounts, connections, balance_history, sync_cursors):
         assert st.count() == 0
+    row = sync_runs.get(s.run_id)
+    assert row["status"] == "dry_run" and row["trigger"] == "cli" and row["requests_used"] >= 1
+    assert sf.requests_used_today(NOW) == row["requests_used"]
+    # repeated dry runs cannot exhaust the budget unrecorded
+    assert sf.run_sync(dry_run=True, client=client_for(), now=NOW, budget=1).status == "skipped_budget"
+
+
+def test_the_lock_is_taken_before_the_busy_check(store_db):
+    """Two callers in the same instant: the second gets SyncBusy, never a second run."""
+    import threading
+    started, release = threading.Event(), threading.Event()
+
+    class SlowClient:
+        requests_made = 0
+
+        def fetch_accounts(self, *a, **k):
+            started.set(); release.wait(5)
+            return client_for().fetch_accounts(*a, **k)
+    results = {}
+
+    def first():
+        results["first"] = sf.run_sync(client=SlowClient(), now=NOW)
+    t = threading.Thread(target=first); t.start()
+    assert started.wait(5)
+    with pytest.raises(sf.SyncBusy):
+        sf.run_sync(client=client_for(), now=NOW)
+    release.set(); t.join(5)
+    assert results["first"].status == "ok" and sync_runs.count() == 1
 
 
 def test_unset_access_url_is_a_noop_with_a_warning(store_db, monkeypatch, caplog):

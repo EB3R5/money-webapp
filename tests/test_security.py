@@ -294,3 +294,13 @@ def test_login_post_over_https_passes_with_the_browsers_origin_and_fails_with_nu
 
 def test_referrer_policy_keeps_the_origin_for_our_own_posts(secure_client):
     assert secure_client.get("/login").headers["referrer-policy"] == "same-origin"
+
+
+def test_multipart_outside_the_api_keeps_the_small_limit(store_client):
+    """The upload allowance is for API routes (photos, documents, the bundle); the login form
+    — reachable by anyone — stays at 64 KiB whatever content type the request claims."""
+    payload = b"a" * (200 * 1024)
+    r = store_client.post("/login", files={"x": ("x.png", payload, "image/png")})
+    assert r.status_code == 413
+    r = store_client.post("/setup", files={"x": ("x.png", payload, "image/png")})
+    assert r.status_code == 413

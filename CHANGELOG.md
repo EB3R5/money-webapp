@@ -4,6 +4,9 @@ All notable changes to this project.
 
 ## [Unreleased]
 
+### 🔒 Security
+- **2026-10-15** — Before the public release, from a review of the snapshot: the login rate limiter reads `X-Forwarded-For` from the right past every trusted proxy, so a client-supplied address can no longer dodge the lockout or lock someone else out behind an appending proxy (nginx, Traefik); the reference `compose.yml` trusts Docker's bridge range, since a proxy on the host reaches the container from the gateway and every visitor used to share one lockout bucket (the app now logs a warning when it ignores a forwarded header for that reason); API tokens are accepted on `/api/` and `/sync/` routes only, so a leaked token cannot open the Django admin, Settings → Users or `/account`, nor mint another token, an invitation or a reset link; the token segment of invitation and reset link paths is masked in every log line, the gunicorn access log included; the 25 MiB upload allowance applies to multipart requests on API routes only — the login, setup, register and reset forms stay at 64 KiB
+
 ### 🔄 Changed
 - **2026-10-15** — The reference `compose.yml` names its services `money` and `money-jobs` (were `money-next` and `money-next-jobs`, from the months the SQLite build ran beside the Mongo one); `ALLOWED_HOSTS` and the docs follow
 

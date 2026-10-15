@@ -87,15 +87,23 @@ def test_limiter_windows_and_per_ip_cap():
     assert lim.retry_after("3.3.3.3", "me", t + 1) == 0                  # success clears the user bucket
 
 
-def test_client_ip_trusts_the_forwarded_header_from_loopback_and_listed_proxies_only(settings):
+def test_client_ip_walks_the_forwarded_header_from_the_right_past_trusted_proxies(settings):
     rf = RequestFactory()
-    assert client_ip(rf.get("/", REMOTE_ADDR="127.0.0.1", HTTP_X_FORWARDED_FOR="100.64.0.9, 10.0.0.1")) == "100.64.0.9"
+    # one proxy on loopback: the hop it wrote (the rightmost) is the client
+    assert client_ip(rf.get("/", REMOTE_ADDR="127.0.0.1", HTTP_X_FORWARDED_FOR="100.64.0.9")) == "100.64.0.9"
+    # a client-supplied value ahead of it is never believed: the lockout cannot be dodged
+    assert client_ip(rf.get("/", REMOTE_ADDR="127.0.0.1", HTTP_X_FORWARDED_FOR="1.2.3.4, 100.64.0.9")) == "100.64.0.9"
+    # an untrusted peer: the header is ignored
     assert client_ip(rf.get("/", REMOTE_ADDR="10.0.0.5", HTTP_X_FORWARDED_FOR="100.64.0.9")) == "10.0.0.5"
     assert client_ip(rf.get("/", REMOTE_ADDR="10.0.0.5")) == "10.0.0.5"
     settings.TRUSTED_PROXIES = ["172.21.0.0/16", "10.0.0.5"]            # a proxy container, a proxy host
     assert client_ip(rf.get("/", REMOTE_ADDR="172.21.0.3", HTTP_X_FORWARDED_FOR="203.0.113.7")) == "203.0.113.7"
-    assert client_ip(rf.get("/", REMOTE_ADDR="10.0.0.5", HTTP_X_FORWARDED_FOR="203.0.113.7")) == "203.0.113.7"
+    # two trusted proxies in a row: walk past both
+    assert client_ip(rf.get("/", REMOTE_ADDR="172.21.0.3", HTTP_X_FORWARDED_FOR="203.0.113.7, 10.0.0.5")) == "203.0.113.7"
     assert client_ip(rf.get("/", REMOTE_ADDR="192.168.1.9", HTTP_X_FORWARDED_FOR="203.0.113.7")) == "192.168.1.9"
+    # garbage in the hop falls back to the connection
+    assert client_ip(rf.get("/", REMOTE_ADDR="127.0.0.1", HTTP_X_FORWARDED_FOR="unknown")) == "127.0.0.1"
+    assert client_ip(rf.get("/", REMOTE_ADDR="", HTTP_X_FORWARDED_FOR="203.0.113.7")) == ""
 
 
 def test_login_cycles_the_session_and_logout_clears_it(auth_client):

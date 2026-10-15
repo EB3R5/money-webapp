@@ -7,6 +7,7 @@ and the CSRF token and sends a user who still has the default password to /accou
 session for thirty days instead of a day; logout and a revoked row end it either way."""
 
 import ipaddress
+import logging
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login, logout
@@ -21,18 +22,20 @@ from ..middleware import error_page
 from ..models import AccessLink
 from ..security import limiter
 
+_log = logging.getLogger("money.security")
+
 _BAD = "Invalid credentials."
 _SLOW = "Too many attempts. Try again in a few minutes."
 
 
 def _trusted_proxy(addr: str) -> bool:
     """Loopback always; otherwise what TRUSTED_PROXIES lists (addresses or CIDR ranges)."""
-    if addr in ("127.0.0.1", "::1", ""):
-        return True
     try:
         ip = ipaddress.ip_address(addr)
     except ValueError:
         return False
+    if ip.is_loopback:
+        return True
     for entry in getattr(settings, "TRUSTED_PROXIES", []):
         try:
             if ip in ipaddress.ip_network(entry, strict=False):
@@ -42,15 +45,39 @@ def _trusted_proxy(addr: str) -> bool:
     return False
 
 
+def _is_ip(s: str) -> bool:
+    try:
+        ipaddress.ip_address(s)
+        return True
+    except ValueError:
+        return False
+
+
+_warned_untrusted: set = set()
+
+
 def client_ip(request) -> str:
-    """The peer's address the rate limiter keys on: the first X-Forwarded-For hop when the
-    connection comes from a trusted proxy (`tailscale serve` on loopback, or one listed in
-    TRUSTED_PROXIES), else the connection's own address."""
+    """The peer's address the rate limiter keys on. When the connection comes from a trusted
+    proxy (loopback, or one listed in TRUSTED_PROXIES), X-Forwarded-For is walked from the
+    right — the hop the nearest proxy wrote — past every trusted proxy to the first address
+    none of them vouches for: the client. The leftmost hop is whatever the client itself
+    sent, so it is never believed on its own (a forged one would defeat the lockout).
+    From an untrusted peer the header is ignored and the connection's address is the key."""
     addr = request.META.get("REMOTE_ADDR", "")
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if forwarded and _trusted_proxy(addr):
-        return forwarded.split(",")[0].strip()
-    return addr
+    if not forwarded:
+        return addr
+    if not _trusted_proxy(addr):
+        if addr not in _warned_untrusted:     # a proxy is in front but not trusted: one bucket for all
+            _warned_untrusted.add(addr)
+            _log.warning("X-Forwarded-For from %s ignored: not a trusted proxy. Every visitor "
+                         "shares one login lockout bucket; list it in TRUSTED_PROXIES.", addr)
+        return addr
+    hops = [h.strip() for h in forwarded.split(",") if h.strip()]
+    for hop in reversed(hops):
+        if not _trusted_proxy(hop):
+            return hop if _is_ip(hop) else addr
+    return hops[0] if hops else addr          # every hop is a proxy of ours: the chain's start
 
 
 def _safe_next(request) -> str:

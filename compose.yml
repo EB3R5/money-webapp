@@ -20,6 +20,12 @@ services:
       # Host paths in .env mean nothing inside the container; the directory is bind-mounted below.
       # The SimpleFIN feed turns on by setting SIMPLEFIN_ACCESS_URL in .env.
       DATA_DIR: /app/data
+      # Docker hands a connection to the published port to the container from the bridge
+      # gateway (172.17.0.1 or similar), never from loopback, so a proxy on the host (tailscale
+      # serve, Caddy, nginx) has to be trusted by that range or the login rate limiter keys
+      # every visitor as the gateway and one person's failures lock everyone out. Only other
+      # containers can connect from these addresses. Override with a narrower range if you like.
+      TRUSTED_PROXIES: "${TRUSTED_PROXIES:-172.16.0.0/12}"
     volumes:
       - "./data:/app/data"
     ports:

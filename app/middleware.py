@@ -102,9 +102,11 @@ class SecurityHeadersMiddleware:
 # --- request body limit --------------------------------------------------------------------
 
 class BodyLimitMiddleware:
-    """413 for a declared body over the limit, before anything reads it. Multipart gets the
-    upload limit (photos, the Item bundle's PNG), as do the JSON paths that carry a
-    document's text. WSGI has no streaming body, so a chunked request (Transfer-Encoding
+    """413 for a declared body over the limit, before anything reads it. Multipart on an API
+    route gets the upload limit (photos, documents, the Item bundle's PNG), as do the JSON
+    paths that carry a document's text; every other path — the login, setup, register and
+    reset forms among them, which anyone can reach — stays at the small limit whatever the
+    content type says. WSGI has no streaming body, so a chunked request (Transfer-Encoding
     without a Content-Length) is refused with 411 rather than counted as it streams; a
     request with neither header has no body."""
 
@@ -116,7 +118,8 @@ class BodyLimitMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         if request.method in ("GET", "HEAD", "OPTIONS"):
             return self.get_response(request)
-        large = (request.META.get("CONTENT_TYPE", "").startswith("multipart/form-data")
+        multipart = request.META.get("CONTENT_TYPE", "").startswith("multipart/form-data")
+        large = ((multipart and request.path.startswith("/api/"))
                  or request.path.startswith(self.upload_paths))
         limit = self.upload_limit if large else self.limit
         declared = request.META.get("CONTENT_LENGTH", "")
@@ -157,11 +160,17 @@ class FetchMetadataMiddleware:
 
 # --- API tokens -----------------------------------------------------------------------------
 
+TOKEN_PATHS = ("/api/", "/sync/")   # where a bearer token is accepted: the script surface
+
+
 class ApiTokenMiddleware:
     """After AuthenticationMiddleware: a request with `Authorization: Bearer <token>` is the
     token's user — exempt from the CSRF check (a script has no form token) and never given
     a session. A bearer that is unknown, revoked, or whose user is inactive is a 401 at once;
-    it never falls through to the cookie. Logged by the token's name, never its value."""
+    it never falls through to the cookie. A token is for scripts, so it is accepted on the
+    API and sync routes only: the pages, `/account` (where tokens are minted), Settings →
+    Users and the Django admin refuse it, and a leaked token cannot mint another, an
+    invitation or a reset link. Logged by the token's name, never its value."""
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -169,6 +178,9 @@ class ApiTokenMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         auth = request.META.get("HTTP_AUTHORIZATION", "")
         if auth.startswith("Bearer "):
+            if not request.path.startswith(TOKEN_PATHS):
+                return JsonResponse({"detail": "API tokens are accepted on /api/ and /sync/ routes only"},
+                                    status=401)
             from .tokens import find_live, touch
             token = find_live(auth[7:].strip())
             if token is None:

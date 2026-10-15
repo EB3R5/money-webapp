@@ -66,3 +66,12 @@ def test_django_and_gunicorn_loggers_are_covered():
     from app.logging_setup import LOGGER_NAMES
     for name in ("django", "django.request", "django.security", "gunicorn.error", "gunicorn.access"):
         assert name in LOGGER_NAMES
+
+
+def test_redact_masks_invitation_and_reset_link_paths():
+    """An unspent link's token is a path segment; the access log must not print it."""
+    tok = "k3Q9x_wLm7-ZpA1bC2dE3fG4hI5jK6lM7nO8pQ9rS0t"
+    assert ls.redact(f'"GET /register/{tok} HTTP/1.1" 200') == '"GET /register/*** HTTP/1.1" 200'
+    assert ls.redact(f"POST /reset/{tok}") == "POST /reset/***"
+    assert ls.redact("GET /register/short") == "GET /register/short"       # not a token
+    assert ls.redact("GET /settings/users/reset") == "GET /settings/users/reset"

@@ -109,3 +109,20 @@ def test_a_bearer_value_is_masked_in_logs(site):
     from app.logging_setup import redact
     _, raw = tokens.mint(site, "x")
     assert raw not in redact(f"request Authorization: Bearer {raw} from 127.0.0.1")
+
+
+def test_a_token_is_refused_outside_the_api_and_sync_routes(site):
+    """A token is for scripts: pages, the account page that mints tokens, Settings → Users and
+    the Django admin refuse it, so a leaked token cannot mint another or an invitation."""
+    site.is_superuser = site.is_staff = True; site.save()
+    _, raw = tokens.mint(site, "importer")
+    c = WebClient(enforce_csrf_checks=True)
+    h = {"Authorization": f"Bearer {raw}"}
+    for path in ("/", "/account", "/admin/", "/settings/users"):
+        r = c.get(path, headers=h)
+        assert r.status_code == 401, path
+        assert "accepted on /api/" in r.json()["detail"]
+    for path in ("/account/tokens", "/settings/users/invite", "/settings/users/reset", "/admin/auth/user/add/"):
+        assert c.post(path, data={"name": "x", "username": "sam"}, headers=h).status_code == 401, path
+    assert ApiToken.objects.count() == 1                           # nothing minted
+    assert c.post("/api/software/import", json=RUN, headers=h).status_code == 200   # the API still works

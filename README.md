@@ -108,9 +108,10 @@ checklist is in `docs/deployment.md`.
    the origin its CSRF check trusts, what the bookmarklets and the invitation / reset links
    bake in. Without it every page is a 400 and every form a 403.
 3. **`SESSION_HTTPS_ONLY=true`**: the session cookie is `Secure` and HSTS is sent.
-4. **`TRUSTED_PROXIES`** when the proxy is not on the same host as the app (another container,
-   another machine): the addresses or ranges whose `X-Forwarded-For` the login rate limiter
-   believes, else every visitor shares the proxy's lockout bucket.
+4. **`TRUSTED_PROXIES`**: the range the proxy connects from, so the login rate limiter sees
+   real visitor addresses in `X-Forwarded-For` instead of keying everyone as the proxy. The
+   reference `compose.yml` already trusts Docker's bridge range for a proxy on the host; a
+   proxy container on another network or another machine is listed by its range.
 
 Then: `manage.py check --deploy` inside the container reports no issues (two checks are
 silenced on purpose: the app stamps its own security and frame headers). Keep the one gunicorn

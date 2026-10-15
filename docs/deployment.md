@@ -78,10 +78,16 @@ below is what made it work.
    `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`; a wrong value is a 400 on every page (host
    check) or a 403 on every form (origin check).
 3. `SESSION_HTTPS_ONLY=true`: `Secure` on the session cookie, HSTS on every response.
-4. `TRUSTED_PROXIES`: the proxy's address or range when it is not on the app's host
-   (`172.21.0.0/16` for a proxy container on the same Docker network). Loopback is always
-   trusted. Without it the login rate limiter keys every visitor as the proxy, so one person's
-   five failures lock everyone out for fifteen minutes.
+4. `TRUSTED_PROXIES`: the address or range the proxy connects from. Loopback is always
+   trusted, but inside Docker a proxy on the host arrives from the bridge gateway, not
+   loopback, so the reference `compose.yml` trusts `172.16.0.0/12` (only other containers can
+   connect from there); a proxy container on another network, or on another machine, is
+   listed by its range. Without it the login rate limiter keys every visitor as the proxy, so
+   one person's five failures lock everyone out for fifteen minutes (the app logs a warning
+   the first time it ignores a forwarded header for this reason). The limiter reads
+   `X-Forwarded-For` from the right, past every trusted hop, so a value the client sent
+   itself is never used: a proxy that appends (nginx's `$proxy_add_x_forwarded_for`,
+   Traefik) and one that overwrites (Caddy) are both safe.
 5. `python manage.py check --deploy` inside the container: "no issues (2 silenced)". The two
    silenced checks ask for Django's own SecurityMiddleware and XFrameOptionsMiddleware; the app
    stamps those headers itself (`app/middleware.py`). Anything else it prints is a real gap.

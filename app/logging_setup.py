@@ -2,8 +2,9 @@
 
 RedactingFilter rewrites every record's message, args and traceback before any logger or
 handler sees them: `scheme://user:pass@host` userinfo becomes `***`, the configured
-SimpleFIN Access URL's credential literal is masked wherever it appears, and
-`Authorization` header values are blanked. It runs from the log record factory, so a record
+SimpleFIN Access URL's credential literal is masked wherever it appears, `Authorization`
+header values are blanked, and the token segment of an invitation or reset link's path is
+masked (the gunicorn access log is a Python logger too). It runs from the log record factory, so a record
 is redacted at creation whatever logger it was logged on and whichever handler — a server's,
 a test's capture — formats it later; it is also installed on the known loggers and their
 handlers for records created before configure_logging() ran. httpx itself logs at WARNING so
@@ -18,6 +19,9 @@ from urllib.parse import urlsplit
 
 _USERINFO = re.compile(r"(\b[a-z][a-z0-9+.-]*://)([^/\s@:]+)(:[^/\s@]*)?@", re.IGNORECASE)
 _AUTH_HEADER = re.compile(r"(?i)(authorization\b[\s:=\"']+)(basic|bearer)?\s*[^\s,;\"']+")
+# An invitation or reset link carries its token as a path segment (app/links.py); the
+# access log would otherwise print an unspent link in clear.
+_LINK_PATH = re.compile(r"(/(?:register|reset)/)[A-Za-z0-9_\-]{8,}")
 MASK = "***"
 
 LOGGER_NAMES = ("", "django", "django.request", "django.security", "django.server",
@@ -41,6 +45,7 @@ def redact(text: str, literals: Iterable[str] = ()) -> str:
         return text
     out = _USERINFO.sub(lambda m: f"{m.group(1)}{MASK}@", text)
     out = _AUTH_HEADER.sub(lambda m: f"{m.group(1)}{(m.group(2) + ' ') if m.group(2) else ''}{MASK}", out)
+    out = _LINK_PATH.sub(lambda m: f"{m.group(1)}{MASK}", out)
     for lit in literals:
         if lit:
             out = out.replace(lit, MASK)

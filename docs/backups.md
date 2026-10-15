@@ -24,7 +24,7 @@ cp -r data/models /path/to/models-$(date +%F)
 ```
 
 This works while the app runs (the copy is transactionally consistent). From the reference
-compose file: `docker compose exec money-next sqlite3 /app/data/money.sqlite ".backup
+compose file: `docker compose exec money sqlite3 /app/data/money.sqlite ".backup
 '/app/data/backup.sqlite'"`, then move the file out of the data directory. Any backup tool
 that snapshots files (restic, borg, Time Machine) should back up the `.backup` output, not
 the live file.

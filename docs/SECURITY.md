@@ -217,7 +217,7 @@ copy of the data directory).
 compose file (the jobs container has the scheduled runs, the web one the requests):
 
 ```bash
-LOGS="docker compose logs --no-log-prefix --since 24h money-next money-next-jobs"
+LOGS="docker compose logs --no-log-prefix --since 24h money money-jobs"
 
 $LOGS | grep -E 'POST /login HTTP/1\.[01]" (401|429)'         # failed / throttled logins
 $LOGS | grep -E '" (403|413) '                                # CSRF / cross-site / oversized

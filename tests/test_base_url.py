@@ -42,7 +42,7 @@ def test_base_url_drives_hosts_origins_and_links(monkeypatch):
 
 def test_without_a_url_loopback_only(monkeypatch):
     s = _settings_with(monkeypatch)
-    assert s.ALLOWED_HOSTS == ["127.0.0.1", "localhost", "money-next"] and s.CSRF_TRUSTED_ORIGINS == []
+    assert s.ALLOWED_HOSTS == ["127.0.0.1", "localhost", "money"] and s.CSRF_TRUSTED_ORIGINS == []
     assert s.BASE_URL == ""
 
 

@@ -4,6 +4,9 @@ All notable changes to this project.
 
 ## [Unreleased]
 
+### 🔄 Changed
+- **2026-10-15** — The reference `compose.yml` names its services `money` and `money-jobs` (were `money-next` and `money-next-jobs`, from the months the SQLite build ran beside the Mongo one); `ALLOWED_HOSTS` and the docs follow
+
 ## [0.1.0] — 2026-10-15
 
 The first public release: Django + SQLite, the SimpleFIN feed, household accounts. Everything below was built between 2026-09-21 and today on the way from the first build.

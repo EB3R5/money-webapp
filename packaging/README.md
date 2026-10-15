@@ -25,7 +25,7 @@ Container-specific config, set in the compose file rather than `.env`: `DATA_DIR
 (`BASE_URL`), so they are minted per host port.
 
 Build context is the repo root; the image collects the static files at build, its entrypoint applies the schema, the migrations and the first account, then runs gunicorn on 8000 (or `python manage.py run_jobs` for the jobs container) and health-checks `/healthz`.
-Config comes from the environment — `.env` is dockerignored. The repo's `compose.yml` builds this Dockerfile for both `money-next` and `money-next-jobs`, reads `.env`, and publishes `127.0.0.1:8012:8000`; a larger stack defines the same two services itself.
+Config comes from the environment — `.env` is dockerignored. The repo's `compose.yml` builds this Dockerfile for both `money` and `money-jobs`, reads `.env`, and publishes `127.0.0.1:8012:8000`; a larger stack defines the same two services itself.
 
 ```bash
 docker build -f packaging/docker/Dockerfile -t money-webapp .

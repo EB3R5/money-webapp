@@ -95,8 +95,10 @@ def is_running(now: Optional[datetime] = None) -> bool:
     """A run is in progress here (the process lock) or in another process — the jobs
     container and the web container share the database but not a lock — which shows as a
     recent `sync_runs` row still marked running."""
-    if _lock.locked():
-        return True
+    return _lock.locked() or _running_elsewhere(now)
+
+
+def _running_elsewhere(now: Optional[datetime] = None) -> bool:
     now = now or _now()
     for r in sync_runs.list({"feed": FEED, "status": "running"}, order=[("started_at", "desc")], limit=1):
         started = r.get("started_at")
@@ -407,11 +409,15 @@ def run_sync(*, trigger: str = "cli", dry_run: bool = False, since: Optional[dat
     """Plan the windows from the Cursor, spend today's remaining budget on them in order,
     and apply each chunk in its own commit. Returns the summary that also lands in sync_runs.
     One run at a time: a second caller gets SyncBusy, never a queue."""
-    if is_running(now):
-        raise SyncBusy("a SimpleFIN sync is already running")
-    with _lock:
+    if not _lock.acquire(blocking=False):          # the lock first: two callers in the same
+        raise SyncBusy("a SimpleFIN sync is already running")   # instant cannot both pass a check
+    try:
+        if _running_elsewhere(now):
+            raise SyncBusy("a SimpleFIN sync is already running")
         return _run_sync(trigger=trigger, dry_run=dry_run, since=since, client=client,
                                now=now, budget=budget)
+    finally:
+        _lock.release()
 
 
 def status(now: Optional[datetime] = None) -> dict:
@@ -455,15 +461,16 @@ def _run_sync(*, trigger: str, dry_run: bool, since: Optional[date],
         log.warning("SimpleFIN sync skipped: %s", summary.error)
     windows = windows[:allowed]
 
-    run_id = None
-    if not dry_run:
-        run_id = "run_" + uuid.uuid4().hex[:16]
-        sync_runs.insert({"_id": run_id, "feed": FEED, "started_at": now, "status": "running",
-                                "trigger": trigger, "window_start": windows[0].start if windows else None,
-                                "window_end": windows[-1].end if windows else None,
-                                "chunks": len(windows), "requests_used": 0})
-        _commit_now()
-        summary.run_id = run_id
+    # A dry run spends real Bridge requests, so it is recorded like any run (its row ends
+    # with status "dry_run") and counts toward the day's budget; it writes nothing else.
+    run_id = "run_" + uuid.uuid4().hex[:16]
+    sync_runs.insert({"_id": run_id, "feed": FEED, "started_at": now, "status": "running",
+                            "trigger": trigger,
+                            "window_start": windows[0].start if windows else None,
+                            "window_end": windows[-1].end if windows else None,
+                            "chunks": len(windows), "requests_used": 0})
+    _commit_now()
+    summary.run_id = run_id
     if summary.status == "skipped_budget":
         _finish(run_id, summary)
         return summary
@@ -523,8 +530,9 @@ def _reconcile_planned() -> None:
 def _finish(run_id: Optional[str], summary: SyncSummary) -> None:
     if not run_id:
         return
+    status = "dry_run" if summary.dry_run and summary.status in ("ok", "partial") else summary.status
     sync_runs.update(run_id, {
-        "finished_at": _now(), "status": summary.status, "chunks": summary.chunks_done,
+        "finished_at": _now(), "status": status, "chunks": summary.chunks_done,
         "requests_used": summary.requests_used, "accounts_seen": summary.accounts_seen,
         "txns_new": summary.txns_new, "txns_updated": summary.txns_updated,
         "txns_pending_replaced": summary.txns_pending_replaced,

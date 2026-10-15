@@ -32,7 +32,7 @@ from django.http import HttpRequest, HttpResponse
 from django.urls import path
 
 from . import documents, web
-from .store.blobs import blobs
+from .store.blobs import EXTENSIONS as PHOTO_TYPES, blobs
 from .store.kit_members import kit_members
 from .store.base import Store
 from .store.deletions import deletions
@@ -332,7 +332,10 @@ class CardCollection:
             data = f.read()
             if not data:
                 continue
-            added.append(blobs.new_photo(data, f.content_type, f.name))
+            try:
+                added.append(blobs.new_photo(data, f.content_type, f.name))
+            except ValueError as e:
+                raise DomainError(f"{f.name or 'file'}: {e}")
         for entry in added:
             self._append_image(doc_id, entry)
         return {"ok": True, "images": added}
@@ -341,7 +344,10 @@ class CardCollection:
                                  filename: str) -> dict:
         """Attach already-downloaded image bytes (e.g. a product image the inventory
         clipper fetched) to a row — the byte-source sibling of upload_images."""
-        entry = blobs.new_photo(data, content_type, filename)
+        try:
+            entry = blobs.new_photo(data, content_type, filename)
+        except ValueError as e:
+            raise DomainError(f"{filename or 'image'}: {e}")
         self._append_image(doc_id, entry)
         return entry
 
@@ -384,7 +390,16 @@ class CardCollection:
                     data, ct = self.get_image(file_id)
                 except Exception:
                     return web.json({"error": "not found"}, 404)
-                return HttpResponse(data, content_type=ct, headers={"Cache-Control": "public, max-age=31536000"})
+                # Inline only as one of the raster types a photo may be (new_photo admits
+                # nothing else; a row from before that rule downloads instead), named by the
+                # id, and sandboxed should anyone open the URL as a page.
+                ct = (ct or "").split(";")[0].strip().lower()
+                if ct in PHOTO_TYPES:
+                    disposition = f'inline; filename="{file_id}.{PHOTO_TYPES[ct]}"'
+                else:
+                    ct, disposition = "application/octet-stream", f'attachment; filename="{file_id}.bin"'
+                return HttpResponse(data, content_type=ct, headers={
+                    "Content-Disposition": disposition, "Content-Security-Policy": "sandbox"})
 
             @web.POST
             def upload(request, doc_id: str):

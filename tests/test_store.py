@@ -32,7 +32,7 @@ EXPECTED_TABLES = {
     "connections", "sync_runs", "sync_cursors", "documents", "software", "kits", "kit_members",
     "blobs", "journal_entries", "expected_flows",
 }
-LATEST = 18
+LATEST = 19
 
 
 def _entity_stores():

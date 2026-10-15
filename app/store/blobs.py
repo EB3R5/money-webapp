@@ -30,6 +30,22 @@ EXTENSIONS = {
     "image/webp": "webp", "image/gif": "gif",
 }
 FALLBACK_EXT = "bin"
+# What a photo's first bytes look like. A photo is admitted by its bytes, never by the type
+# the client claims: an HTML or SVG page stored as a "photo" would be served inline on the
+# app's origin otherwise.
+_MAGIC = ((b"\xff\xd8\xff", "image/jpeg"), (b"\x89PNG", "image/png"),
+          (b"GIF87a", "image/gif"), (b"GIF89a", "image/gif"))
+
+
+def sniff_image(data: bytes) -> Optional[str]:
+    """The raster type the bytes are, or None when they are not a JPEG, PNG, WebP or GIF."""
+    head = bytes(data[:16] or b"")
+    for magic, ct in _MAGIC:
+        if head.startswith(magic):
+            return ct
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "image/webp"
+    return None
 _ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _EXT_OK = re.compile(r"^[a-z0-9]{1,10}$")
 
@@ -84,7 +100,13 @@ class BlobsStore:
     def new_photo(self, data: bytes, content_type: Optional[str],
                         filename: Optional[str] = None) -> dict:
         """Store bytes as a new photo; returns the entry to append to a row's `_images`:
-        `{id, filename, content_type}`, the filename falling back to `<id>.<ext>`."""
+        `{id, filename, content_type}`, the filename falling back to `<id>.<ext>`. The type
+        is what the bytes are (`sniff_image`); `content_type` is the client's claim and is
+        ignored. Bytes that are not a JPEG, PNG, WebP or GIF raise ValueError."""
+        sniffed = sniff_image(data)
+        if sniffed is None:
+            raise ValueError("not an image (JPEG, PNG, WebP or GIF)")
+        content_type = sniffed
         blob_id = uuid.uuid4().hex
         meta = self.put(blob_id, "photo", data, content_type)
         return {"id": blob_id, "filename": filename or f"{blob_id}.{extension_for(content_type)}",

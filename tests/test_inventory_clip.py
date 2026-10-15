@@ -212,7 +212,7 @@ def test_fetch_image_attaches(inv_client, monkeypatch):
         calls.append((url, referer))
         if url.endswith("bad.jpg"):
             return {"ok": False, "error": "image fetch returned HTTP 403"}
-        return {"ok": True, "data": b"PNGDATA", "content_type": "image/png", "filename": "a.png"}
+        return {"ok": True, "data": b"\x89PNGDATA", "content_type": "image/png", "filename": "a.png"}
     monkeypatch.setattr("app.views.inventory_clip.download_image", fake)
 
     r = inv_client.post("/api/inventory/inv1/fetch-image", json={
@@ -226,7 +226,7 @@ def test_fetch_image_attaches(inv_client, monkeypatch):
     doc = inventory.get("inv1")
     assert len(doc["_images"]) == 1 and doc["_images"][0]["content_type"] == "image/png"
     assert doc["_edited_at"]
-    assert blobs.get(doc["_images"][0]["id"], kind="photo") == (b"PNGDATA", "image/png")   # a real Blob
+    assert blobs.get(doc["_images"][0]["id"], kind="photo") == (b"\x89PNGDATA", "image/png")   # a real Blob
 
 
 def test_fetch_image_all_fail_and_guards(inv_client, monkeypatch):

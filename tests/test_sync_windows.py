@@ -155,7 +155,7 @@ def test_dry_run_plans_but_writes_nothing(store_db, monkeypatch):
     c = chunked_client([payload()])
     s = sf.run_sync(client=c, now=NOW, dry_run=True)
     assert s.status == "ok" and s.chunks == 2 and s.chunks_done == 2 and s.txns_new == 4
-    assert sync_runs.count() == 0 and sync_cursors.get("simplefin") is None
+    assert sync_runs.count() == 1 and sync_cursors.get("simplefin") is None   # the run row only
     assert "2/2 chunks" in sf.format_summary(s)
 
 

@@ -6,6 +6,7 @@ import sqlite3
 import pytest
 
 from app.store import blobs as mod
+from app.store.inventory import inventory
 from app.store.blobs import blobs
 from app.store.database import database
 
@@ -58,9 +59,15 @@ def test_new_photo_mints_entry_and_filename_fallback(store_db):
     e = blobs.new_photo(b"\x89PNG...", "image/png", "orig.png")
     assert len(e["id"]) == 32 and e == {"id": e["id"], "filename": "orig.png", "content_type": "image/png"}
     assert blobs.get(e["id"], kind="photo") == (b"\x89PNG...", "image/png")
-    e2 = blobs.new_photo(b"x", None)
-    assert e2["filename"] == f"{e2['id']}.bin" and e2["content_type"] == "application/octet-stream"
+    # the type is what the bytes are, never what the client said
+    e2 = blobs.new_photo(b"\xff\xd8\xff\xe0jpeg", "text/html", "page.html")
+    assert e2["content_type"] == "image/jpeg" and blobs.get(e2["id"], kind="photo")[1] == "image/jpeg"
     assert (blobs.meta(e2["id"]))["kind"] == "photo"
+    e3 = blobs.new_photo(b"RIFF\x00\x00\x00\x00WEBPVP8 ", None)
+    assert e3["content_type"] == "image/webp" and e3["filename"] == f"{e3['id']}.webp"
+    for bad in (b"x", b"<html><script>1</script>", b"<svg xmlns='http://www.w3.org/2000/svg'/>", b"GIF9"):
+        with pytest.raises(ValueError):
+            blobs.new_photo(bad, "image/png")
 
 
 def test_ids_and_totals(store_db):
@@ -107,8 +114,29 @@ def test_photo_round_trip_on_every_slug(store_client, slug, row_id, store_name):
     assert (store.get(row_id))["_images"] == [entry]
     r = store_client.get(f"/api/{slug}/image/{entry['id']}")
     assert r.status_code == 200 and r.content == b"\x89PNG-bytes"
+    assert r.headers["content-type"] == "image/png"
+    assert r.headers["content-disposition"] == f'inline; filename="{entry["id"]}.png"'
+    assert r.headers["content-security-policy"] == "sandbox"
     assert not (database.data_dir / "photos").exists(), "no files beside the database"
     r = store_client.post(f"/api/{slug}/{row_id}/images/delete", json={"id": entry["id"]})
     assert r.json() == {"ok": True}
     assert blobs.get(entry["id"]) is None
     assert (store.get(row_id))["_images"] == []
+
+
+def test_a_page_cannot_be_stored_or_served_as_a_photo(store_client):
+    """An HTML or SVG upload is refused whatever type the client claims; a row stored
+    before that rule downloads as bytes instead of rendering on the app's origin."""
+    from tests import dbhelper
+    dbhelper.seed_inventory()
+    for name, ct, body in (("p.html", "text/html", b"<html><body>hi</body></html>"),
+                           ("p.svg", "image/svg+xml", b"<svg xmlns='http://www.w3.org/2000/svg'/>"),
+                           ("p.png", "image/png", b"<html>not a png</html>")):
+        r = store_client.post("/api/inventory/inv1/images", files=[("files", (name, body, ct))])
+        assert r.status_code == 400 and "not an image" in r.json()["error"], name
+    assert not (inventory.get("inv1")).get("_images")
+    blobs.put("legacy", "photo", b"<html><script>1</script></html>", "text/html")
+    r = store_client.get("/api/inventory/image/legacy")
+    assert r.status_code == 200 and r.headers["content-type"] == "application/octet-stream"
+    assert r.headers["content-disposition"].startswith("attachment;")
+    assert r.headers["content-security-policy"] == "sandbox"

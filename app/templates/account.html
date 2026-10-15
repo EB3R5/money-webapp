@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Account — Money{% endblock %}
+
+{% block content %}
+<div class="login account-page">
+  <form class="login-card" method="post" action="/account">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+    <h1>Change password</h1>
+    {% if forced %}<p class="login-error" role="alert">This account still has its default password. Choose a new one to continue.</p>{% endif %}
+    {% for e in errors %}<p class="login-error" role="alert">{{ e }}</p>{% endfor %}
+    <label>Current password
+      <input id="old_password" name="old_password" type="password" autocomplete="current-password" autofocus required />
+    </label>
+    <label>New password
+      <input id="new_password1" name="new_password1" type="password" autocomplete="new-password" minlength="12" required />
+    </label>
+    <label>New password, again
+      <input id="new_password2" name="new_password2" type="password" autocomplete="new-password" minlength="12" required />
+    </label>
+    <p class="muted">At least twelve characters; not a common password; not your username.</p>
+    <button type="submit">Save</button>
+  </form>
+
+  <section class="login-card tokens-card">
+    <h1>API tokens</h1>
+    <p class="muted">For scripts and agents: send one as <code>Authorization: Bearer &lt;token&gt;</code>. It acts as you, needs no browser session or CSRF token, and can be revoked here.</p>
+    {% if new_token %}
+      <p class="login-error" role="alert">Token <strong>{{ new_token.name }}</strong> — copy it now, it is not shown again:</p>
+      <pre class="token-value">{{ new_token.value }}</pre>
+    {% endif %}
+    {% if token_error %}<p class="login-error" role="alert">{{ token_error }}</p>{% endif %}
+    {% if tokens %}
+      <ul class="token-list">
+        {% for t in tokens %}
+        <li>
+          <span><strong>{{ t.name }}</strong> <span class="muted">{{ t.prefix }}…</span>
+            <span class="muted">created {{ t.created_at.strftime('%Y-%m-%d') }}{% if t.last_used_at %}, last used {{ t.last_used_at.strftime('%Y-%m-%d') }}{% else %}, never used{% endif %}</span></span>
+          <form method="post" action="/account/tokens/{{ t.id }}/revoke">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+            <button type="submit" class="btn-secondary">Revoke</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No tokens yet.</p>
+    {% endif %}
+    {% if not forced %}
+    <form method="post" action="/account/tokens" class="token-mint">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+      <label>New token's name
+        <input name="name" type="text" maxlength="60" placeholder="software import script" required />
+      </label>
+      <button type="submit">Mint</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{# The card editor's modal — the one editable detail panel every card page shares (card-editor.js
+   binds by these ids). Included by card_collection.html and by any page that renders its own
+   view over a CardCollection (the Kit page). Needs `cfg` and `fields` in context. #}<!-- Editable detail panel -->
+<div id="card-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="card-modal-title">
+    <div class="modal-head">
+      <h3 id="card-modal-title">{{ cfg.heading }}</h3>
+      <button type="button" class="modal-close" id="card-close" aria-label="Close">×</button>
+    </div>
+    <form id="card-form" class="acct-form">
+      <p class="muted acct-id-line">ID: <span id="card-id-display">—</span></p>
+      <div class="acct-form-grid">
+        {% for f in fields %}
+        <label class="field" data-field="{{ f.name }}">
+          <span>{{ f.name.replace('_', ' ') }}</span>
+          {% if f.kind == 'textarea' %}
+          <textarea name="{{ f.name }}" rows="2"></textarea>
+          {% elif f.kind == 'select' %}
+          <select name="{{ f.name }}">
+            <option value="">Choose…</option>
+            {% for opt in f.options or [] %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}
+          </select>
+          {% else %}
+          {# text inputs (even for numbers) so a value the browser deems "invalid" is
+             never silently blanked out and then saved as empty. #}
+          <input type="text" name="{{ f.name }}" {% if f.kind == 'number' %}inputmode="decimal"{% endif %} />
+          {% endif %}
+        </label>
+        {% endfor %}
+      </div>
+      {% if cfg.images_enabled %}
+      <div class="card-images-field" id="card-images-field">
+        <span class="card-images-label muted">Images</span>
+        <div class="card-images" id="card-images"></div>
+        <div class="card-image-upload">
+          <input type="file" id="card-image-input" accept="image/*" multiple hidden />
+          <button type="button" class="btn-secondary" id="card-image-add">＋ Add images</button>
+          <span class="muted" id="card-image-hint">— save the item first to attach images</span>
+        </div>
+      </div>
+      {% endif %}
+      {% if cfg.documents_enabled %}
+      <div class="card-docs-field" id="card-docs-field">
+        <span class="card-images-label muted">Documents <span id="card-doc-count"></span></span>
+        <ul class="doc-list" id="card-docs"></ul>
+        <p class="muted" id="card-doc-empty" hidden>No documents yet.</p>
+        <div class="card-image-upload">
+          <input type="file" id="card-doc-input" multiple hidden />
+          <button type="button" class="btn-secondary" id="card-doc-add">⬆ Upload</button>
+          <button type="button" class="btn-secondary" id="card-doc-note">✎ New note</button>
+          <span class="muted" id="card-doc-hint">— save the item first to attach documents</span>
+        </div>
+      </div>
+      {% endif %}
+      <div class="modal-actions">
+        <span id="card-status" class="muted"></span>
+        {% for a in cfg.extra_actions %}
+        <button type="button" class="btn-secondary" id="{{ a.id }}">{{ a.label }}</button>
+        {% endfor %}
+        {% if cfg.can_delete %}
+        <button type="button" class="text-danger btn-secondary" id="card-delete">Delete</button>
+        {% endif %}
+        <button type="button" class="btn-secondary" id="card-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>

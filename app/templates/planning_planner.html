@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ y.year }} — Planner{% endblock %}
+
+{% block content %}
+<div class="page-head planning-head">
+  <a class="nav-month" href="/planning/planner/{{ y.prev }}">← {{ y.prev }}</a>
+  <h1>{{ y.year }}</h1>
+  <a class="nav-month" href="/planning/planner/{{ y.next }}">{{ y.next }} →</a>
+  <span class="muted">
+    {% set done = y.months | rejectattr('kind', 'equalto', 'expected') | list %}
+    {{ done | length }} month{{ 's' if done | length != 1 }} actual · {{ 12 - done | length }} expected
+    · net so far {{ y.totals.net_ytd | money(true) }} · projected {{ y.totals.net_projected | money(true) }}
+  </span>
+  <span class="grid-toolbar">
+    <span class="legend"><span><i class="sw income"></i>Income</span><span><i class="sw expense"></i>Spend</span><span><i class="sw expected"></i>Expected</span></span>
+    <a class="btn-secondary" href="/planning/notebook/{{ y.year }}">Year review</a>
+    <a class="btn-secondary" href="/planning/month/{{ y.current_month }}">This month</a>
+  </span>
+</div>
+
+<div class="year-strip" id="year-strip">
+  {% for m in y.months %}
+  <div class="ym {{ m.kind }}{% if m.month == y.current_month %} current{% endif %}" data-month="{{ m.month }}" data-kind="{{ m.kind }}"
+       title="{{ m.month }}: income {{ m.income | money }}, spend {{ m.expense | money }}{% if m.kind == 'expected' %} (expected){% elif m.kind == 'partial' %} (so far){% endif %}">
+    <a class="mo" href="/planning/month/{{ m.month }}">{{ m.month[5:7] | int | month_abbr }}<small>{% if m.kind == 'expected' %}exp.{% elif m.kind == 'partial' %}so far{% endif %}</small></a>
+    <div class="bars">
+      <i class="income" data-w="{{ (m.income / y.max_bar * 100) | round(1) }}"></i>
+      <i class="expense" data-w="{{ (m.expense / y.max_bar * 100) | round(1) }}"></i>
+    </div>
+    <div class="net {{ 'pos' if m.net > 0 else 'neg' if m.net < 0 else '' }}">{{ m.net | money(true) }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="planning-cols planner-cols">
+  <div class="planning-main">
+    <div class="card" id="forecast">
+      <h2>Checking, next 90 days · <span class="estimate">estimated from ledger</span></h2>
+      <div class="callout" id="forecast-callout"><span class="muted">Loading…</span></div>
+      <div id="chart-forecast" class="chart forecast-chart"></div>
+      <div class="tablewrap forecast-events"><table class="t" id="forecast-events"></table></div>
+    </div>
+    <div class="card" id="expected-income">
+      <h2>Expected income · {{ y.year }} · <a class="muted" href="/planning/income">Income sources</a> · <span class="estimate">detected rows estimated from ledger</span></h2>
+      <div class="callout">
+        <span>Expected <b>{{ y.expected_total | money }}</b></span>
+        <span>Received <b>{{ y.received_total | money }}</b></span>
+        <span>Remaining <b>{{ y.remaining_total | money }}</b></span>
+      </div>
+      {% if y.expected_income %}
+      <div class="tablewrap"><table class="t">
+        <thead><tr><th>Source</th><th>Cadence</th><th class="r">Per year</th><th class="r">To date</th><th class="r">Remaining</th><th>Next</th></tr></thead>
+        <tbody>
+        {% for s in y.expected_income %}
+        <tr data-source="{{ s.source }}" data-origin="{{ s.origin }}">
+          <td>{{ s.source }}{% if s.origin == 'detected' %} <span class="pill none">detected</span>{% endif %}</td><td class="muted">{{ s.cadence }}</td>
+          <td class="r">{{ s.expected_year | money if s.expected_year is not none else '—' }}</td>
+          <td class="r">{{ s.received_ytd | money }}</td>
+          <td class="r">{{ s.remaining | money if s.remaining is not none else '—' }}</td>
+          <td class="muted">{{ s.next or '—' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% else %}
+      <p class="muted">No income in {{ y.year }} yet and no recurring source to expect. <a href="/planning/income">Add an Income source</a>.</p>
+      {% endif %}
+    </div>
+    <div class="card" id="year-totals">
+      <h2>{{ y.year }} so far</h2>
+      <div class="callout">
+        <span>Income <b>{{ y.totals.income_ytd | money }}</b></span>
+        <span>Spend <b>{{ y.totals.expense_ytd | money }}</b></span>
+        <span>Net <b class="{{ 'pos' if y.totals.net_ytd > 0 else 'neg' if y.totals.net_ytd < 0 else '' }}">{{ y.totals.net_ytd | money(true) }}</b></span>
+        <span class="muted">expected months assume {{ y.variable_daily | money }}/day variable spend plus recurring bills</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="c-side">
+    <div class="card" id="sinking-funds">
+      <h2>Sinking funds</h2>
+      {% for g in y.funds %}
+      <div class="fund" data-goal-id="{{ g.id }}">
+        <div class="row"><b>{{ g.name }}</b><span class="num">{{ g.current_balance | money }} / {{ g.target_amount | money }}</span></div>
+        <div class="track"><i data-w="{{ (g.pct * 100) | round(1) }}"></i></div>
+        <div class="meta">
+          <span>{% if g.required_monthly is not none %}{{ g.required_monthly | money }}/mo needed{% else %}no deadline{% endif %}{% if g.projected_completion %} · funded {{ g.projected_completion }}{% endif %}</span>
+          <span>{% if g.on_track == 'achieved' %}<span class="pos">achieved</span>
+            {% elif g.on_track == 'on_track' %}<span class="pos">on track for {{ g.target_date }}</span>
+            {% elif g.on_track == 'behind' %}<span class="late">late for {{ g.target_date }}</span>
+            {% elif g.target_date %}needed {{ g.target_date }}{% else %}—{% endif %}</span>
+        </div>
+      </div>
+      {% else %}
+      <p class="muted">No savings goals yet. <a href="/metrics">Add one on the Savings page</a>; it appears here with its progress.</p>
+      {% endfor %}
+      {% if y.funds %}<p class="muted">Progress is the pooled savings balance for {{ y.year }}, as on the Savings page.</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+<button class="drawer-btn" type="button" id="drawer-open">Journal · {{ f.label.split(' ')[0][:3] }}</button>
+<aside class="drawer" id="drawer" aria-label="Journal entry for {{ f.label }}">
+  <div class="drawer-head"><h2>{{ f.label }} entry</h2>
+    <span><a class="muted" href="/planning/month/{{ f.month }}">Month page</a> <button class="btn-secondary" type="button" id="drawer-close">Close</button></span></div>
+  <div class="frozen-stamp"><span id="entry-stamp"></span><button type="button" class="linkish" id="entry-refreeze" hidden>Refreeze</button></div>
+  <div class="frozen" id="entry-figures"></div>
+  <textarea class="entry" id="entry-body" aria-label="Journal entry for {{ f.label }}" placeholder="What happened with money in {{ f.label }}? Markdown is fine.">{{ entry.body if entry else '' }}</textarea>
+  <div class="entry-foot"><span class="muted" id="entry-status">{% if entry %}Saved{% else %}Not saved yet{% endif %}</span><button class="btn-primary" type="button" id="entry-save" disabled>Save entry</button></div>
+  {% set open_prompts = prompts | rejectattr('addressed') | list %}
+  <div id="prompts-card" {% if not open_prompts %}hidden{% endif %}>
+    <div class="chips" id="prompt-chips">
+      {% for p in open_prompts %}<button type="button" class="chip" data-prompt-id="{{ p.id }}">{{ p.text }}</button>{% endfor %}
+    </div>
+  </div>
+</aside>
+
+<script nonce="{{ csp_nonce }}">window.PLANNING = {{ {"period": f.month, "entry": entry, "preview": preview, "open": open} | tojson }};</script>
+<script src="/static/js/planning-entry.js?v={{ css_v('js/planning-entry.js') }}"></script>
+<script src="/static/js/planning-planner.js?v={{ css_v('js/planning-planner.js') }}"></script>
+<script src="/static/vendor/echarts.min.js"></script>
+<script src="/static/js/chart-theme.js?v={{ css_v('js/chart-theme.js') }}"></script>
+<script src="/static/js/planning-forecast.js?v={{ css_v('js/planning-forecast.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "money-webapp"
+version = "0.1.0"
+description = "Personal finance ledger: Django + Jinja over a SQLite data directory, fed by the SimpleFIN Bridge"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    # The HTTP layer (ADR-0024): Django, the existing Jinja templates, gunicorn in the image.
+    "django>=5.2,<5.3",
+    "whitenoise>=6",
+    "gunicorn>=23",
+    "jinja2>=3.1",
+    # The feed's scheduled runs (manage.py run_jobs) and .env loading (app/config.py).
+    "apscheduler>=3.10",
+    "python-dotenv>=1.0",
+    # Accounts (app/accounts.py, ADR-0024): django.contrib.auth with bcrypt password hashing.
+    "bcrypt>=4.0",
+    "yfinance>=0.2.40",
+    # Auto-categorization ML (app/ml_model.py) — in-process inference + retrain.
+    "scikit-learn>=1.5",
+    "joblib>=1.3",
+    "pandas>=2.0",
+    # Inventory clipper (app/image_fetch.py) and the SimpleFIN client — HTTP; the Bridge's
+    # rows are validated by Pydantic models (app/simplefin/models.py).
+    "httpx>=0.27",
+    "pydantic>=2.5",
+    # Documents (app/documents.py, ADR-0016): Markdown notes rendered server-side and sanitized.
+    "markdown-it-py>=3.0",
+    "nh3>=0.2",
+]
+
+[project.optional-dependencies]
+# Desktop window (packaging/desktop/launcher.py). pywebview pulls pyobjc on macOS.
+desktop = ["pywebview>=6.2"]
+# Test-only deps.
+dev = [
+    "pytest>=8",
+    "pytest-django>=4.9",
+    "httpx>=0.27",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*", "config*"]
+
+[tool.setuptools.package-data]
+app = ["templates/*.html", "static/**/*", "store/schema/*.sql", "seeds/*.json"]

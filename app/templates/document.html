@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.name }} — {{ doc.parent_title or 'Documents' }} — Money{% endblock %}
+
+{% block content %}
+<div class="page-head sheet-tools doc-head">
+  <a class="btn-secondary" href="{{ doc.back_url }}">← {{ doc.parent_title or 'Back' }}</a>
+  <h1 id="doc-title">{{ doc.name }}</h1>
+  <span class="doc-kind doc-kind-{{ doc.kind }}">{{ doc.kind }}</span>
+  <span class="muted">{{ doc.size }} B</span>
+  <span class="ml-auto doc-tools">
+    {% if doc.editable %}
+      {% if edit %}
+        <a class="btn-secondary" href="/documents/{{ doc.id }}">View</a>
+        <button type="button" class="btn-primary" id="doc-save" disabled>Save</button>
+      {% else %}
+        <a class="btn-secondary" href="/documents/{{ doc.id }}?edit=1">✎ Edit</a>
+      {% endif %}
+    {% endif %}
+    <a class="btn-secondary" href="{{ doc.download_url }}" download="{{ doc.name }}">⬇ Download</a>
+    <button type="button" class="btn-secondary" id="doc-print">🖨 Print</button>
+  </span>
+</div>
+
+{% if edit %}
+<div class="doc-editor">
+  <textarea id="doc-body" spellcheck="false">{{ doc.body }}</textarea>
+  <article id="doc-preview" class="doc-body markdown-body">{{ doc.html | safe }}</article>
+</div>
+<span id="doc-status" class="muted"></span>
+{% else %}
+<article class="doc-body{% if doc.show == 'inline' %} markdown-body{% endif %}" id="doc-view">
+  {% if doc.show == "html" %}
+    <iframe class="doc-frame" sandbox="allow-scripts allow-forms allow-popups" src="{{ doc.raw_url }}" title="{{ doc.name }}"></iframe>
+  {% elif doc.show == "pdf" %}
+    <iframe class="doc-frame doc-frame-tall" src="{{ doc.raw_url }}" title="{{ doc.name }}"></iframe>
+  {% elif doc.show == "image" %}
+    <img src="{{ doc.raw_url }}" alt="{{ doc.name }}" class="doc-image" />
+  {% elif doc.show == "inline" %}
+    {{ doc.html | safe }}
+  {% else %}
+    <p class="muted">No preview for this file type. <a href="{{ doc.download_url }}" download="{{ doc.name }}">Download {{ doc.name }}</a></p>
+  {% endif %}
+</article>
+{% endif %}
+
+<script nonce="{{ csp_nonce }}">window.DOC = { id: {{ doc.id | tojson }}, kind: {{ doc.kind | tojson }}, edit: {{ edit | tojson }} };</script>
+<script src="/static/js/document.js?v={{ css_v('js/document.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ budget.versionName }} — Budgets{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <a href="/budgets" class="muted">← Budgets</a>
+  <h1>{{ budget.versionName }}</h1>
+  <span class="muted">{{ budget.month }} · {{ budget.budgetId }}
+    · <span class="pill pill-{{ budget.status }}" id="status-pill">{{ budget.status }}</span></span>
+  <span class="grid-toolbar">
+    <span class="budget-total">Total <strong id="budget-total">$0.00</strong></span>
+    <button type="button" class="btn-secondary" id="add-line">Add group</button>
+    <button type="button" class="btn-secondary" id="delete-lines">Delete selected</button>
+    <a class="btn-secondary" href="/budgets/{{ budget.id }}/report">Budget vs Actual</a>
+    <button type="button" class="btn-primary" id="save-budget">Save version</button>
+  </span>
+</div>
+
+<div id="grid" class="ag-theme-quartz"></div>
+
+<div id="add-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-modal-title">
+    <div class="modal-head">
+      <h3 id="add-modal-title">Add group</h3>
+      <button type="button" class="modal-close" id="add-close" aria-label="Close">×</button>
+    </div>
+    <form id="add-form" class="acct-form">
+      <div class="acct-form-grid">
+        <label class="field"><span>Group</span><input type="text" name="group" list="group-options" required /></label>
+        <label class="field"><span>Amount</span><input type="number" step="any" name="amount" value="0" /></label>
+      </div>
+      <div class="modal-actions">
+        <span id="add-status" class="muted"></span>
+        <button type="button" class="btn-secondary" id="add-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+<datalist id="group-options">
+  {% for g in groups %}<option value="{{ g }}"></option>{% endfor %}
+</datalist>
+
+<script nonce="{{ csp_nonce }}">window.BUDGET = {
+  id: {{ budget.id | tojson }},
+  lines: {{ lines | tojson }},
+};</script>
+<script src="/static/js/budget-editor.js?v={{ css_v('js/budget-editor.js') }}"></script>
+{% endblock %}

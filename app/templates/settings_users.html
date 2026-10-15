@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Users — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Users</h1>
+  <span class="muted">The household's members. Everyone sees the same ledger; admins also manage users and the feed.</span>
+</div>
+
+{% if error %}<p class="login-error" role="alert">{{ error }}</p>{% endif %}
+{% if new_link %}
+<section class="settings-card">
+  <p class="login-error" role="alert">A {{ new_link.kind }} link for <strong>{{ new_link.for }}</strong> — copy it now, it is not shown again:</p>
+  <pre class="token-value">{{ new_link.url }}</pre>
+</section>
+{% endif %}
+
+<section class="settings-card">
+  <h2>Members</h2>
+  <table class="users-table">
+    <thead><tr><th>Username</th><th>Role</th><th>Last sign-in</th><th></th></tr></thead>
+    <tbody>
+    {% for m in members %}
+      <tr class="{{ 'inactive' if not m.is_active }}">
+        <td>{{ m.username }}{% if m == request.user %} <span class="muted">(you)</span>{% endif %}{% if not m.is_active %} <span class="pill pill-failed">deactivated</span>{% endif %}</td>
+        <td>{{ "admin" if m.is_superuser else "member" }}</td>
+        <td>{{ m.last_login.strftime('%Y-%m-%d %H:%M') if m.last_login else "never" }}</td>
+        <td class="users-actions">
+          <form method="post" action="/settings/users/reset"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" /><input type="hidden" name="user_id" value="{{ m.id }}" /><button type="submit" class="btn-secondary">Reset link</button></form>
+          <form method="post" action="/settings/users/{{ m.id }}/admin"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" /><input type="hidden" name="admin" value="{{ '0' if m.is_superuser else '1' }}" /><button type="submit" class="btn-secondary">{{ "Make member" if m.is_superuser else "Make admin" }}</button></form>
+          <form method="post" action="/settings/users/{{ m.id }}/active"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" /><input type="hidden" name="active" value="{{ '0' if m.is_active else '1' }}" /><button type="submit" class="btn-secondary">{{ "Deactivate" if m.is_active else "Reactivate" }}</button></form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="settings-card">
+  <h2>Invitations</h2>
+  <p class="muted">The only way to join: mint a link, hand it over on a channel you trust, revoke it if it goes astray.</p>
+  {% if invites %}
+    <ul class="token-list">
+    {% for l in invites %}
+      <li><span><strong>{{ l.note or "(no note)" }}</strong> <span class="muted">expires {{ l.expires_at.strftime('%Y-%m-%d %H:%M') }} · {{ l.uses_allowed - l.uses }} use(s) left · minted by {{ l.created_by.username if l.created_by else "—" }}</span></span>
+        <form method="post" action="/settings/users/links/{{ l.id }}/revoke"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" /><button type="submit" class="btn-secondary">Revoke</button></form></li>
+    {% endfor %}
+    </ul>
+  {% else %}<p class="muted">No open invitations.</p>{% endif %}
+  <form method="post" action="/settings/users/invite" class="token-mint">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+    <label>Who it is for (a note for you)<input name="note" type="text" maxlength="120" placeholder="Sam" /></label>
+    <label>Valid for (days)<input name="days" type="number" min="1" max="90" value="{{ invite_days }}" /></label>
+    <label>Uses<input name="uses" type="number" min="1" max="20" value="1" /></label>
+    <button type="submit">Mint an invitation</button>
+  </form>
+</section>
+
+<section class="settings-card">
+  <h2>Password reset links</h2>
+  <p class="muted">For a member who cannot sign in: one use, a day, shown once. Mint one from the Reset link button beside the member.</p>
+  {% if resets %}
+    <ul class="token-list">
+    {% for l in resets %}
+      <li><span><strong>{{ l.user.username if l.user else "—" }}</strong> <span class="muted">expires {{ l.expires_at.strftime('%Y-%m-%d %H:%M') }} · minted by {{ l.created_by.username if l.created_by else "—" }}</span></span>
+        <form method="post" action="/settings/users/links/{{ l.id }}/revoke"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" /><button type="submit" class="btn-secondary">Revoke</button></form></li>
+    {% endfor %}
+    </ul>
+  {% else %}<p class="muted">No pending reset links.</p>{% endif %}
+</section>
+{% endblock %}

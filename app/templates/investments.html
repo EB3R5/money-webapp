@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Investments — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none -%}<span class="zero">–</span>
+  {%- elif v < 0 -%}<span class="neg">-${{ "{:,.2f}".format(-v) }}</span>
+  {%- else -%}${{ "{:,.2f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Investments</h1>
+  <span class="muted">current portfolio · {{ money(total.value) }}</span>
+  <span id="inv-status" class="ml-auto muted"></span>
+  <button type="button" class="btn-secondary" id="refresh-prices"
+          title="Fetch live quotes (yfinance) and update current values">🔄 Refresh prices</button>
+  <button type="button" class="btn-secondary" id="sync-portfolio"
+          title="Pull holdings into the balance sheet">⤓ Sync to Balances</button>
+</div>
+
+{% if not rows %}
+  <p class="muted">No holdings in the current portfolio.</p>
+{% else %}
+<table class="pivot">
+  <thead>
+    <tr>
+      <th class="lbl">Asset</th>
+      <th class="lbl">Account</th>
+      <th class="num">Shares</th>
+      <th class="num">Avg Cost</th>
+      <th class="num">Current Price</th>
+      <th class="num">Current Value</th>
+      <th class="num">Return</th>
+      <th class="num">Δ</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr{% if r._id %} class="holding-row" data-id="{{ r._id }}" tabindex="0" role="button"
+        title="Edit {{ r.asset }}"{% endif %}>
+      <td class="lbl">{{ r.asset }}{% if r.is_cash %} <span class="muted">· cash</span>{% endif %}</td>
+      <td class="lbl muted">{{ r.account }}</td>
+      <td class="num">{{ "{:,.4g}".format(r.shares) if r.shares else "" }}</td>
+      <td class="num">{{ money(r.avg_cost) }}</td>
+      <td class="num">{% if r.is_cash %}<span class="muted">—</span>{% else %}{{ money(r.price) }}{% endif %}</td>
+      <td class="num">{{ money(r.value) }}</td>
+      <td class="num {{ 'neg' if r.ret < 0 else 'pos' if r.ret > 0 }}">{{ money(r.ret) }}</td>
+      <td class="num {{ 'neg' if r.delta < 0 else 'pos' if r.delta > 0 }}">{{ "{:+.1f}%".format(r.delta * 100) if r.cost else "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr class="grand">
+      <td class="lbl">Total</td>
+      <td class="lbl"></td>
+      <td class="num"></td>
+      <td class="num"></td>
+      <td class="num"></td>
+      <td class="num">{{ money(total.value) }}</td>
+      <td class="num {{ 'neg' if total.ret < 0 else 'pos' if total.ret > 0 }}">{{ money(total.ret) }}</td>
+      <td class="num {{ 'neg' if total.delta < 0 else 'pos' if total.delta > 0 }}">{{ "{:+.1f}%".format(total.delta * 100) if total.cost else "" }}</td>
+    </tr>
+  </tfoot>
+</table>
+{% endif %}
+
+<style nonce="{{ csp_nonce }}">
+  .holding-row { cursor: pointer; }
+  .holding-row:hover td, .holding-row:focus td { background: rgba(79,107,140,.06); }
+  .holding-row:focus { outline: none; }
+</style>
+
+<!-- Editable position panel — the card pages' modal, minus create/delete -->
+<div id="card-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="card-modal-title">
+    <div class="modal-head">
+      <h3 id="card-modal-title">Holding</h3>
+      <button type="button" class="modal-close" id="card-close" aria-label="Close">×</button>
+    </div>
+    <form id="card-form" class="acct-form">
+      <p class="muted acct-id-line">Asset: <span id="card-id-display">—</span></p>
+      <div class="acct-form-grid">
+        <label class="field" data-field="Shares">
+          <span>Shares</span>
+          <input type="text" name="Shares" inputmode="decimal" />
+        </label>
+        <label class="field" data-field="Purchase Price">
+          <span>Purchase Price</span>
+          <input type="text" name="Purchase Price" inputmode="decimal" />
+        </label>
+        <label class="field" data-field="Brokerage">
+          <span>Brokerage</span>
+          <input type="text" name="Brokerage" />
+        </label>
+      </div>
+      <div class="modal-actions">
+        <span id="card-status" class="muted"></span>
+        <button type="button" class="btn-secondary" id="card-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/js/card-editor.js?v={{ css_v('js/card-editor.js') }}"></script>
+<script nonce="{{ csp_nonce }}">
+(function () {
+  makeCardEditor({
+    data: [{ label: "Holdings", entries: [
+      {% for r in rows if r._id %}
+      { _id: {{ r._id | tojson }}, asset: {{ r.asset | tojson }},
+        is_cash: {{ r.is_cash | tojson }}, Shares: {{ r["Shares"] | tojson }},
+        "Purchase Price": {{ r["Purchase Price"] | tojson }},
+        Brokerage: {{ r["Brokerage"] | tojson }} },
+      {% endfor %}
+    ] }],
+    fields: [{ name: "Shares", kind: "number" },
+             { name: "Purchase Price", kind: "number" },
+             { name: "Brokerage", kind: "text" }],
+    idField: "asset",
+    titleField: "asset",
+    endpoint: "/api/investments/holding",
+    rowSelector: "tr.holding-row",
+    reloadOnUpdate: true,      // values recompute server-side — repaint via reload
+    onModalOpen: (mode, item, form) => {
+      // Cash has no cost basis distinct from its value — hide Purchase Price.
+      const pp = form.querySelector('[data-field="Purchase Price"]');
+      if (pp) pp.style.display = item && item.is_cash ? "none" : "";
+    },
+  });
+  // Rows are <tr>, not <button> — give Enter/Space the native button behavior.
+  document.querySelectorAll("tr.holding-row").forEach((tr) =>
+    tr.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tr.click(); }
+    }));
+})();
+</script>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+  const status = document.getElementById("inv-status");
+  const post = (url) => fetch(url, { method: "POST" }).then((r) => r.json());
+
+  const refresh = document.getElementById("refresh-prices");
+  refresh.addEventListener("click", () => {
+    refresh.disabled = true;
+    status.textContent = "Fetching live quotes…";
+    post("/api/investments/refresh-prices")
+      .then((d) => {
+        if (!d.ok) { status.textContent = "Refresh failed"; return; }
+        let msg = "✓ Updated " + d.updated + " holding(s)";
+        if (d.failed && d.failed.length) msg += " · no quote for " + d.failed.join(", ");
+        status.textContent = msg + " — reloading…";
+        setTimeout(() => window.location.reload(), 900);
+      })
+      .catch(() => { status.textContent = "Network error"; })
+      .finally(() => { refresh.disabled = false; });
+  });
+
+  const sync = document.getElementById("sync-portfolio");
+  sync.addEventListener("click", () => {
+    if (!confirm("Pull the current portfolio into the balance sheet? "
+               + "This records a new dated snapshot in Balances; earlier records stay as history.")) return;
+    sync.disabled = true;
+    status.textContent = "Syncing…";
+    post("/api/investments/sync")
+      .then((d) => {
+        status.textContent = d.ok
+          ? "✓ " + d.lines + " holding(s), $" + d.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " → Balances"
+            + (d.skipped && d.skipped.length
+               ? " — " + d.skipped.length + " skipped (balance already entered this month: " + d.skipped.join(", ") + ")"
+               : "")
+          : "Sync failed";
+      })
+      .catch(() => { status.textContent = "Network error"; })
+      .finally(() => { sync.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

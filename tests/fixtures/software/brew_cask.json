@@ -1,0 +1,27 @@
+{
+  "token": "visual-studio-code",
+  "name": [
+    "Microsoft Visual Studio Code",
+    "VS Code"
+  ],
+  "desc": "Open-source code editor",
+  "homepage": "https://code.visualstudio.com/",
+  "version": "1.140.0",
+  "auto_updates": true,
+  "artifacts": [
+    {
+      "uninstall": [
+        {
+          "launchctl": "com.microsoft.VSCode.ShipIt",
+          "quit": "com.microsoft.VSCode"
+        }
+      ]
+    },
+    {
+      "app": [
+        "Visual Studio Code.app"
+      ],
+      "target": "/Applications/Visual Studio Code.app"
+    }
+  ]
+}

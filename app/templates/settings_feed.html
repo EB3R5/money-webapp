@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Feed settings — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Feed</h1>
+  <span class="muted">The SimpleFIN Bridge is the one live source of transactions and balances (ADR-0015).</span>
+</div>
+
+<section class="settings-card">
+  <h2>State</h2>
+  {% if feed.configured %}
+    <p><span class="pill pill-ok">configured</span>
+       <span class="muted">An Access URL is set in the environment. It is never shown here.</span></p>
+    <dl class="settings-facts">
+      <dt>Requests today</dt><dd>{{ feed.requests_used_today }} of {{ feed.budget }} ({{ remaining }} left; the Bridge allows 24 a day)</dd>
+      <dt>Running now</dt><dd>{{ "yes" if feed.running else "no" }}</dd>
+      <dt>Last run</dt>
+      <dd>{% if feed.last_run %}<span class="pill pill-{{ feed.last_run.status }}">{{ feed.last_run.status }}</span>
+          {{ feed.last_run.started_at }} · trigger {{ feed.last_run.trigger }} ·
+          {{ feed.last_run.txns_new or 0 }} new, {{ feed.last_run.txns_updated or 0 }} updated, {{ feed.last_run.requests_used or 0 }} request(s)
+          {% else %}<span class="muted">none yet</span>{% endif %}</dd>
+      <dt>Cursor</dt><dd>{% if feed.cursor %}window end {{ feed.cursor.window_end }}; last success {{ feed.cursor.last_success_at or "—" }}{% else %}<span class="muted">none yet — the first run looks back {{ schedule.lookback_days }} days</span>{% endif %}</dd>
+      <dt>Next scheduled run</dt><dd>{% if next_run %}{{ next_run.strftime("%Y-%m-%d %H:%M UTC") }}{% else %}—{% endif %}
+          <span class="muted">(every {{ schedule.every_hours }} h at :{{ "%02d" % schedule.minute }}, by the jobs process; a catch-up shortly after a start when the last success is older than {{ schedule.stale_hours }} h)</span></dd>
+      <dt>Windows</dt><dd>up to {{ schedule.window_days }} days per request, re-reading {{ schedule.overlap_days }} days behind the cursor</dd>
+    </dl>
+    <p><a href="/activity">Activity</a> lists every run and has the Sync now button.</p>
+  {% else %}
+    <p><span class="pill pill-skipped_budget">not configured</span>
+       <span class="muted">No Access URL is set. The feed is off; everything else works.</span></p>
+    <h3>Set it up</h3>
+    <ol class="settings-steps">
+      <li>In the SimpleFIN Bridge, connect your banks and create a <strong>setup token</strong>.</li>
+      <li>On the box that runs the app, claim it once — the token is single-use and the Access URL it yields is the credential:
+        <pre class="token-value">{{ claim_command }}</pre>
+        Only the Access URL is printed; nothing else is stored.</li>
+      <li>Put it in <code>.env</code> as <code>SIMPLEFIN_ACCESS_URL</code> (environment only, never the database — <code>docs/SECURITY.md</code>) and restart both containers.</li>
+      <li>Come back here: the feed shows as configured, and the jobs process runs the first sync (a {{ schedule.lookback_days }}-day lookback) about 20 seconds after its start.</li>
+    </ol>
+  {% endif %}
+</section>
+{% endblock %}

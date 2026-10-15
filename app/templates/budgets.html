@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Budgets — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Budgets</h1>
+  <span class="muted">{{ versions | length }} version(s)</span>
+  <span class="grid-toolbar">
+    <a class="btn-secondary" href="/budgets/pivot">📐 Pivot (all versions)</a>
+    <button type="button" class="btn-primary" id="new-budget">➕ New budget</button>
+  </span>
+</div>
+
+<div class="tablewrap report-scroll">
+<table class="budget-table">
+  <thead>
+    <tr><th>Month</th><th>Version</th><th>ID</th><th>Status</th>
+        <th class="num">Groups</th><th class="num">Total</th><th>Created</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for v in versions %}
+    <tr data-id="{{ v.id }}">
+      <td>{{ v.month }}</td>
+      <td><a href="/budgets/{{ v.id }}">{{ v.versionName }}</a></td>
+      <td class="muted">{{ v.budgetId }}</td>
+      <td><span class="pill pill-{{ v.status }}">{{ v.status }}</span></td>
+      <td class="num">{{ v.groups }}</td>
+      <td class="num">{{ "${:,.2f}".format(v.total) }}</td>
+      <td class="muted">{{ v.created }}</td>
+      <td>
+        <a class="btn-secondary" href="/budgets/{{ v.id }}/report" title="Budget vs Actual">📊</a>
+        <button type="button" class="btn-secondary btn-del" data-id="{{ v.id }}"
+                data-name="{{ v.versionName }}">🗑</button></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted">No budgets yet — create one to seed amounts from your transaction history.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div id="new-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="new-modal-title">
+    <div class="modal-head">
+      <h3 id="new-modal-title">New budget</h3>
+      <button type="button" class="modal-close" id="new-close" aria-label="Close">×</button>
+    </div>
+    <form id="new-form" class="acct-form">
+      <div class="acct-form-grid">
+        <label class="field"><span>Month</span><input type="month" name="month" value="{{ month }}" required /></label>
+        <label class="field"><span>Version name</span><input type="text" name="versionName" placeholder="Baseline" /></label>
+      </div>
+      <p class="muted">Amounts seed from a 6-month trailing average per group; edit them after.</p>
+      <div class="modal-actions">
+        <span id="new-status" class="muted"></span>
+        <button type="button" class="btn-secondary" id="new-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Create &amp; edit</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/js/budgets.js?v={{ css_v('js/budgets.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{{ f.label }} — Planning{% endblock %}
+
+{% block content %}
+<div class="page-head planning-head">
+  <a class="nav-month" href="/planning/month/{{ f.prev }}">← {{ f.prev }}</a>
+  <h1>{{ f.label }}</h1>
+  <a class="nav-month" href="/planning/month/{{ f.next }}">{{ f.next }} →</a>
+  <span class="muted">
+    {% if f.budget %}Budget “{{ f.budget.versionName }}”{% if f.budget.status != 'saved' %} (draft){% endif %}{% else %}No budget{% endif %}
+    · {{ f.days }} days{% if f.is_current %} · current month{% endif %}
+    {% if entry %} · entry written {{ entry._created_at[:10] }}{% endif %}
+  </span>
+  <span class="grid-toolbar">
+    {% if f.budget %}<a class="btn-secondary" href="/budgets/{{ f.budget.id }}">Budget editor</a>
+    {% else %}<a class="btn-secondary" href="/budgets">Budgets</a>{% endif %}
+    <a class="btn-secondary" href="/balance-sheet?ym={{ f.month[:4] }}-{{ f.month[5:7] | int }}">Balance sheet</a>
+    <button class="btn-primary" type="button" id="entry-save" disabled>Save entry</button>
+  </span>
+</div>
+
+<div class="summary-cards planning-tiles">
+  <div class="card stat"><span class="k">Income</span><span class="v">{{ f.income | money }}</span>
+    <span class="sub">12-mo avg {{ f.avg_income_12 | money }}</span></div>
+  <div class="card stat"><span class="k">Spend</span><span class="v">{{ f.expense | money }}</span>
+    <span class="sub">{% if f.budget %}budget {{ f.budget.spend_budget | money }} ·
+      {% set over = f.expense - f.budget.spend_budget %}
+      <span class="{{ 'neg' if over > 0 else 'pos' }}">{{ over | abs | money }} {{ 'over' if over > 0 else 'under' }}</span>
+      {% else %}no budget · 12-mo avg {{ f.avg_expense_12 | money }}{% endif %}</span></div>
+  <div class="card stat"><span class="k">Net</span><span class="v {{ 'pos' if f.net > 0 else 'neg' if f.net < 0 else '' }}">{{ f.net | money(true) }}</span>
+    <span class="sub">12-mo avg {{ f.avg_net_12 | money(true) }}</span></div>
+  <div class="card stat"><span class="k">Net savings rate</span><span class="v">{{ f.savings_rate | pct }}</span>
+    <span class="sub">target {{ f.target_rate | pct }} · net ÷ income</span></div>
+  <div class="card stat"><span class="k">Net worth</span>
+    {% if f.net_worth %}
+    <span class="v">{{ f.net_worth.value | money }}</span>
+    <span class="sub">{% if f.net_worth.delta is not none %}<span class="{{ 'pos' if f.net_worth.delta >= 0 else 'neg' }}">{{ f.net_worth.delta | money(true) }}</span> vs {{ f.net_worth.prev_as_of }}{% else %}first month with Snapshots{% endif %}{% if not f.net_worth.exact %} · as of {{ f.net_worth.as_of }}{% endif %}</span>
+    {% else %}<span class="v">—</span><span class="sub">no Snapshots yet</span>{% endif %}</div>
+</div>
+
+<div class="planning-cols">
+<div class="planning-main">
+<div class="card">
+  <h2>Budget vs actual{% if f.budget %} · {{ f.budget.rows | length }} groups · {{ f.budget.on_target }} on target{% endif %}</h2>
+  {% if f.budget %}
+  <div class="tablewrap"><table class="t" id="bva">
+    <thead><tr><th>Group</th><th class="r">Budget</th><th class="r">Actual</th><th class="r">Over / under</th><th></th></tr></thead>
+    <tbody>
+    {% for r in f.budget.rows %}
+      <tr data-group="{{ r.group }}" data-match="{{ r.match }}">
+        <td>{{ r.group }}{% if r.kind == 'income' %} <span class="muted">income</span>{% endif %}</td>
+        <td class="r">{{ r.budget_abs | money }}{% if r.planned %} <span class="muted" title="planned spend folded into the line">incl. {{ r.planned | money }} planned</span>{% endif %}</td>
+        <td class="r">{{ r.actual_abs | money }}</td>
+        <td class="r {{ '' if r.over == 0 else ('pos' if r.favorable else 'neg') }}">{{ r.over | money(true) if r.over else '—' }}</td>
+        <td><span class="pill {{ r.pill.cls }}">{{ r.pill.text }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td><b>Spend total</b></td><td class="r"><b>{{ f.budget.spend_budget | money }}</b></td>
+      <td class="r"><b>{{ f.budget.spend_actual | money }}</b></td>
+      {% set tot = f.budget.spend_actual - f.budget.spend_budget %}
+      <td class="r {{ 'neg' if tot > 0 else 'pos' if tot < 0 else '' }}"><b>{{ tot | money(true) if tot else '—' }}</b></td><td></td></tr></tfoot>
+  </table></div>
+  <p class="muted">Spend total sums the expense groups; income groups are listed but not totalled. Transactions with a blank Group are outside this table.{% if f.budget.planned_total %} Planned spend placed in this month ({{ f.budget.planned_total | money }}) is folded into its groups' lines; the stored budget is unchanged.{% endif %}</p>
+  {% else %}
+  <p class="muted">No budget version for {{ f.label }}. <a href="/budgets">Create one on the Budgets page</a> and it appears here.</p>
+  {% endif %}
+</div>
+<div class="card" id="income-sources">
+  <h2>Income · expected vs received · <span class="estimate">estimated from ledger</span></h2>
+  {% if f.income_sources.rows %}
+  <div class="tablewrap"><table class="t">
+    <thead><tr><th>Source</th><th>Cadence</th><th class="r">Expected</th><th class="r">Received</th><th>Next</th></tr></thead>
+    <tbody>
+    {% for r in f.income_sources.rows %}
+      <tr data-source="{{ r.source }}" data-cadence="{{ r.cadence }}" data-origin="{{ r.origin }}">
+        <td>{{ r.source }}{% if r.origin == 'detected' %} <span class="pill none">detected</span>{% endif %}</td>
+        <td class="muted">{{ r.cadence }}</td>
+        <td class="r">{{ r.expected | money if r.expected is not none else '—' }}</td>
+        <td class="r">{{ r.received | money }}</td>
+        <td class="muted">{{ r.next or '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td><b>Total</b></td><td></td>
+      <td class="r"><b>{{ f.income_sources.expected_total | money }}</b></td>
+      <td class="r"><b>{{ f.income_sources.received_total | money }}</b></td><td></td></tr></tfoot>
+  </table></div>
+  <p class="muted">Typed <a href="/planning/income">Income sources</a> come first; <span class="pill none">detected</span> rows are Income categories that recur in the last two years with no source of their own. One-off rows received income this month without a pattern.</p>
+  {% else %}
+  <p class="muted">No recurring income found in the last two years. <a href="/planning/income">Add an Income source</a> to expect one.</p>
+  {% endif %}
+</div>
+</div>
+
+<aside class="planning-journal">
+  <div class="card">
+    <h2>Journal entry</h2>
+    <div class="frozen-stamp"><span id="entry-stamp"></span><button type="button" class="linkish" id="entry-refreeze" hidden>Refreeze</button></div>
+    <div class="frozen" id="entry-figures"></div>
+    <textarea class="entry" id="entry-body" aria-label="Journal entry for {{ f.label }}" placeholder="What happened with money in {{ f.label }}? Markdown is fine.">{{ entry.body if entry else '' }}</textarea>
+    <div class="entry-foot"><span class="muted" id="entry-status">{% if entry %}Saved{% else %}Not saved yet{% endif %}</span><span class="muted">Ctrl-S saves</span></div>
+  </div>
+  {% set open_prompts = prompts | rejectattr('addressed') | list %}
+  <div class="card" id="prompts-card" {% if not open_prompts %}hidden{% endif %}>
+    <h2>Prompts from the data · click to insert{% if prompts | length != open_prompts | length %} · {{ prompts | length - open_prompts | length }} addressed{% endif %}</h2>
+    <div class="chips" id="prompt-chips">
+      {% for p in open_prompts %}<button type="button" class="chip" data-prompt-id="{{ p.id }}">{{ p.text }}</button>{% endfor %}
+    </div>
+  </div>
+</aside>
+</div>
+
+<script nonce="{{ csp_nonce }}">window.PLANNING = {{ {"period": f.month, "entry": entry, "preview": preview, "open": open} | tojson }};</script>
+<script src="/static/js/planning-entry.js?v={{ css_v('js/planning-entry.js') }}"></script>
+{% endblock %}

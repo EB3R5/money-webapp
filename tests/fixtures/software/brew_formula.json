@@ -1,0 +1,12 @@
+{
+  "name": "ripgrep",
+  "full_name": "ripgrep",
+  "desc": "Search tool like grep and The Silver Searcher",
+  "homepage": "https://github.com/BurntSushi/ripgrep",
+  "license": "Unlicense",
+  "versions": {
+    "stable": "15.2.0",
+    "head": "HEAD",
+    "bottle": true
+  }
+}

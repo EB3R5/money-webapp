@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Savings — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none or v == 0 -%}<span class="zero">–</span>
+  {%- elif v < 0 -%}<span class="neg">({{ "{:,.0f}".format(-v) }})</span>
+  {%- else -%}{{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro pct(v) -%}{{ "{:.1f}%".format((v or 0) * 100) }}{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Savings</h1>
+  <span class="muted">savings rate &amp; goals</span>
+</div>
+
+<div class="page-head">
+  <h2 class="m-0">Year {{ year }}</h2>
+  <form method="get" class="year-picker">
+    <select name="year">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="summary-cards">
+  <div class="card stat"><span class="k">Avg monthly saved</span><span class="v">{{ money(summary.avg_monthly) }}</span></div>
+  <div class="card stat"><span class="k">Total saved ({{ year }})</span><span class="v pos">{{ money(summary.total_saved) }}</span></div>
+  <div class="card stat"><span class="k">Savings rate</span><span class="v">{{ pct(summary.overall_rate) }}</span></div>
+  <div class="card stat"><span class="k">Target rate</span><span class="v">{{ pct(summary.target_rate) }}</span></div>
+</div>
+
+<div class="card">
+  <h2>Monthly savings rate</h2>
+  <div id="chart-savings" class="chart"></div>
+</div>
+
+<div class="card">
+  <h2>By month</h2>
+  {% if not rows %}
+    <p class="muted">No data for {{ year }}. Make sure some categories are tagged
+      <strong>SAVINGS</strong> in the Category Mapping below.</p>
+  {% else %}
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead>
+      <tr>
+        <th class="lbl">Month</th>
+        <th class="num">Income</th><th class="num">Saved</th><th class="num">Target</th>
+        <th class="num">Gap</th><th class="num">Rate</th>
+        <th class="num total-col">Running saved</th><th class="num">Running gap</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="lbl">{{ r.month }}</td>
+        <td class="num">{{ money(r.income) }}</td>
+        <td class="num">{{ money(r.savings) }}</td>
+        <td class="num">{{ money(r.target) }}</td>
+        <td class="num {{ 'pos' if r.gap >= 0 else 'neg' }}">{{ money(r.gap) }}</td>
+        <td class="num">{{ pct(r.rate) }}</td>
+        <td class="num total-col">{{ money(r.running_saved) }}</td>
+        <td class="num {{ 'pos' if r.running_gap >= 0 else 'neg' }}">{{ money(r.running_gap) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Goals</h2>
+  <div class="tablewrap report-scroll">
+  <table class="pivot" id="goals-table">
+    <thead>
+      <tr>
+        <th class="lbl">Goal</th><th class="num">Target</th><th class="lbl">By</th>
+        <th class="num">Balance</th><th class="lbl">From</th><th class="num">Per month</th><th class="num">Remaining</th><th class="num">%</th>
+        <th class="num">Req/mo</th><th class="lbl">Projected</th><th class="lbl">Status</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in goals %}
+      <tr data-goal-id="{{ g.id }}">
+        <td class="lbl">{{ g.name }}</td>
+        <td class="num">{{ money(g.target_amount) }}</td>
+        <td class="lbl">{{ g.target_date or '—' }}</td>
+        <td class="num">{{ money(g.current_balance) }}</td>
+        <td class="lbl">{% if g.balance_source == 'account' %}{{ g.balance_account }}{% elif g.balance_source == 'typed' %}typed{% else %}pooled savings{% endif %}</td>
+        <td class="num">{{ money(g.monthly_contribution) }}</td>
+        <td class="num">{{ money(g.remaining) }}</td>
+        <td class="num">{{ pct(g.pct) }}</td>
+        <td class="num">{% if g.required_monthly is not none %}{{ money(g.required_monthly) }}{% else %}—{% endif %}</td>
+        <td class="lbl">{{ g.projected_completion or '—' }}</td>
+        <td class="lbl">
+          {% if g.on_track == 'achieved' %}<span class="pos">✅ Achieved</span>
+          {% elif g.on_track == 'on_track' %}<span class="pos">✅ On track</span>
+          {% elif g.on_track == 'behind' %}<span class="neg">⚠️ Behind</span>
+          {% elif g.on_track == 'no_date' %}🔮 No date
+          {% else %}—{% endif %}
+        </td>
+        <td><button type="button" class="btn-secondary" data-edit-goal="{{ g.id }}" data-name="{{ g.name }}" data-target="{{ g.target_amount }}"
+              data-date="{{ g.target_date or '' }}" data-notes="{{ g.notes or '' }}" data-per="{{ g.monthly_contribution }}"
+              data-account="{{ g.balance_account or '' }}" data-override="{{ g.balance_override if g.balance_override is not none else '' }}">Edit</button>
+            <button type="button" class="btn-secondary" data-del-goal="{{ g.id }}">Delete</button></td>
+      </tr>
+      {% else %}
+      <tr><td class="muted" colspan="13">No goals yet — add one below.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <form id="goal-form" class="mt-1 acct-form-grid">
+    <input type="hidden" name="id" id="goal-id" value="">
+    <label class="field"><span>Name</span><input name="name" id="goal-name" required placeholder="Emergency fund"></label>
+    <label class="field"><span>Target amount</span><input name="target_amount" id="goal-target" type="number" step="0.01" min="0" required placeholder="10000"></label>
+    <label class="field"><span>Target date</span><input name="target_date" id="goal-date" type="date"></label>
+    <label class="field"><span>Monthly contribution</span><input name="monthly_contribution" id="goal-per" type="number" step="0.01" min="0" placeholder="150"></label>
+    <label class="field"><span>Balance from account <span class="muted">(optional)</span></span><input name="balance_account" id="goal-account" list="goal-accounts" placeholder="leave blank for pooled savings"><datalist id="goal-accounts">{% for a in account_names %}<option value="{{ a }}">{% endfor %}</datalist></label>
+    <label class="field"><span>Balance typed <span class="muted">(optional, beats the account)</span></span><input name="balance_override" id="goal-override" type="number" step="0.01" min="0" placeholder=""></label>
+    <label class="field"><span>Notes</span><input name="notes" id="goal-notes" placeholder="optional"></label>
+    <div class="modal-actions"><span class="muted" id="goal-form-title"></span><button type="button" class="btn-secondary" id="goal-cancel" hidden>Cancel</button><button type="submit" class="btn-primary" id="goal-submit">Add goal</button></div>
+  </form>
+  <p class="muted">A goal's balance is the typed figure, else the linked account's current amount, else the pooled savings total. The Year plan's sinking funds read the balance and the monthly contribution.</p>
+</div>
+
+<div class="card">
+  <h2>Projections — balance to date &amp; next {{ 24 }} months</h2>
+  <p class="muted">Actual cumulative savings (solid) continued forward at your average monthly
+    pace (dashed). Dotted lines mark each goal's target.</p>
+  <div id="chart-projections" class="chart"></div>
+</div>
+
+<div class="card">
+  <h2>Rate scenarios — what if you saved more?</h2>
+  <p class="muted">From today's balance, projected 36 months forward at each savings rate of
+    your average monthly income.</p>
+  <div id="chart-scenarios" class="chart"></div>
+</div>
+
+<details class="card">
+  <summary><strong>Settings &amp; Category Mapping</strong></summary>
+  <p class="muted">Income = Σ amounts over <strong>INCOME</strong> categories (or the override
+    below). Savings = Σ |amount| over <strong>SAVINGS</strong> categories. Set the target rate,
+    then tag each category's role — exactly like the sheet's Category Mapping.</p>
+
+  <form id="savings-config" class="acct-form-grid">
+    <label class="field"><span>Target rate (%)</span>
+      <input name="target_rate" type="number" step="0.1" min="0" max="100"
+             value="{{ '%.1f' % (config.target_rate * 100) }}"></label>
+    <label class="field"><span>Income override ($/mo, 0 = off)</span>
+      <input name="income_override" type="number" step="0.01" min="0"
+             value="{{ '%.2f' % config.income_override }}"></label>
+    <label class="field"><span>Scenario rates (%, comma-separated)</span>
+      <input name="scenario_rates"
+             value="{% for r in config.scenario_rates %}{{ '%g' % (r * 100) }}{{ ', ' if not loop.last }}{% endfor %}"></label>
+    <button type="submit" class="btn-primary">Save</button>
+    <button type="button" id="sync-mapping" class="btn-secondary">Sync new categories</button>
+  </form>
+
+  <div class="tablewrap report-scroll">
+  <table class="mt-1 pivot" id="mapping-table">
+    <thead>
+      <tr><th class="lbl">Category</th><th class="lbl">Group</th><th class="lbl">Role</th></tr>
+    </thead>
+    <tbody>
+      {% for m in mapping %}
+      <tr data-cat="{{ m.category }}">
+        <td class="lbl">{{ m.category }}</td>
+        <td class="lbl muted">{{ m.group or '—' }}</td>
+        <td class="lbl">
+          <select data-map="role">
+            {% for role in roles %}<option value="{{ role }}" {{ 'selected' if role == m.role }}>{{ role }}</option>{% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td class="muted" colspan="3">No categories mapped yet — click “Sync new categories”.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</details>
+
+<script src="/static/vendor/echarts.min.js"></script>
+<script src="/static/js/chart-theme.js?v={{ css_v('js/chart-theme.js') }}"></script>
+<script nonce="{{ csp_nonce }}">window.METRICS_YEAR = {{ year }};</script>
+<script nonce="{{ csp_nonce }}">window.MAPPING_EDITOR = { endpoint: "/api/metrics/savings/mapping", syncEndpoint: "/api/metrics/savings/sync", reloadOnChange: true };</script>
+<script src="/static/js/mapping-editor.js?v={{ css_v('js/mapping-editor.js') }}"></script>
+<script src="/static/js/metrics.js?v={{ css_v('js/metrics.js') }}"></script>
+{% endblock %}

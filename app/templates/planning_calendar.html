@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Calendar — Planning{% endblock %}
+
+{% block content %}
+<div class="page-head planning-head">
+  <h1>{{ p.start | month_short }} → {{ p.end | month_short }}</h1>
+  {% with w=p.window %}{% include "_window_nav.html" %}{% endwith %}
+  <span class="muted">
+    {{ p.totals.planned | money }} planned over 12 months · {{ p.totals.unplaced }} not yet placed
+    · {% if p.totals.flagged %}{{ p.totals.flagged | length }} month{{ 's' if p.totals.flagged | length != 1 }} negative: {{ p.totals.flagged | map('month_short') | join(', ') }}{% else %}no negative months{% endif %}
+    {% if p.last_pull %} · last pull {{ p.last_pull.started_at | datetime_short }} ({{ p.last_pull.status }}){% endif %}
+    {% if sync %} · <span class="pill {{ 'ok' if sync == 'ok' else 'over' }}">pull {{ sync }}</span>{% endif %}
+  </span>
+  <span class="grid-toolbar">
+    <input type="search" id="plan-search" class="card-search" placeholder="Search items…" value="{{ q }}" autocomplete="off" aria-label="Search items">
+    <form method="post" action="/api/planning/sync/future-purchases?next=/planning/calendar" class="inline-form">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+      <button class="btn-secondary" type="submit" {% if not p.pull_configured %}disabled title="FUTURE_PURCHASES_URL is not set"{% endif %}>Sync future-purchases{% if not p.pull_configured %} · not configured{% endif %}</button>
+    </form>
+    <a class="btn-primary" href="/planning/year">Add planned spend</a>
+  </span>
+</div>
+
+{% if p.past %}
+<div class="card cal-past" id="past">
+  <h2>Dated earlier than the window · move or mark done on the Year plan</h2>
+  <div class="chips">
+    {% for it in p.past %}<a class="chip" href="/planning/year">{{ it.name }} · {{ it.amount | money }} · {{ it.month | month_short }}</a>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="planning-cols cal-cols">
+  <div class="planning-main">
+    <p class="cal-hint" id="cal-hint" hidden>Now click a month to place it. Esc cancels.</p>
+    <div class="wall" id="wall">
+      {% for m in p.months %}
+      <div class="wm {{ 'flag' if m.flag }}" data-month="{{ m.month }}">
+        <div class="head"><b>{{ m.month | month_short }}</b><span class="{{ 'neg' if m.flag else 'pos' }}">net {{ m.net | money(true) }}</span></div>
+        <div class="base">base {{ m.base_net | money(true) }} after bills, variable, savings</div>
+        {% for it in m['items'] %}
+        <div class="item {{ 'fp' if it.origin == 'future-purchases' }}" data-id="{{ it.id }}" draggable="true" data-search="{{ it.name }} {{ it.group or '' }} {{ it.external_id or '' }} {{ it.notes or '' }}">
+          <span>{{ it.name }}{% if it.external_status == 'researching' %} <span class="pill none">researching</span>{% endif %}{% if it.funding and it.funding.pct < 1 %} <span class="pill warn">part-funded</span>{% endif %}</span>
+          <span class="amt">{{ it.amount | money }} <button type="button" data-unplace="{{ it.id }}" title="back to the shelf">✕</button></span>
+        </div>
+        {% endfor %}
+        <div class="sum"><span class="muted">planned</span><span class="num">{{ m.planned | money }}</span></div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="muted">Each month starts from expected income minus recurring bills, variable spend and the savings contribution ({{ (p.target_rate * 100) | round(0) | int }}% of income), then subtracts what is planned there · <span class="estimate">estimated from ledger</span>.</p>
+  </div>
+
+  <div class="c-side">
+    <div class="card" id="shelf-card" id="shelf">
+      <h2>Not yet placed · {{ p.shelf | length }} · drag onto a month, or click one, then a month</h2>
+      {% if p.shelf %}
+      <div class="shelf scroll-list">
+        {% for it in p.shelf %}
+        <button type="button" class="item" data-shelf="{{ it.id }}" draggable="true" data-search="{{ it.name }} {{ it.group or '' }} {{ it.external_id or '' }} {{ it.notes or '' }}">
+          <span>{{ it.name }}{% if it.external_id %} <span class="pill fp">{{ it.external_id }}</span>{% endif %}{% if it.external_status == 'researching' %} <span class="pill none">researching</span>{% endif %}</span>
+          <span class="num">{{ it.amount | money }}</span>
+        </button>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="muted">Everything is placed.</p>
+      {% endif %}
+      <p class="muted cal-note">Decided in future-purchases without a target date, and needs you have not dated.</p>
+    </div>
+
+    <div class="card" id="funds">
+      <h2>Funds</h2>
+      {% for g in p.funds %}
+      <div class="fund" data-goal-id="{{ g.id }}">
+        <div class="row"><b>{{ g.name }}</b><span class="num">{{ g.have | money }} now{% if g.source == 'account' %} <span class="muted">({{ g.account }})</span>{% elif g.source == 'pooled' %} <span class="muted">(pooled)</span>{% endif %} · {{ g.per | money }}/mo</span></div>
+        {% set pct = (g.earmarked / g.by_end * 100) if g.by_end else (100 if g.earmarked else 0) %}
+        <div class="track"><i data-w="{{ [pct, 100] | min | round(1) }}"></i></div>
+        <div class="meta"><span>{{ g.earmarked | money }} earmarked this window</span><span>{{ g.by_end | money }} by {{ p.end | month_short }}{% if g.short %} <span class="short">· short</span>{% endif %}</span></div>
+      </div>
+      {% else %}
+      <p class="muted">No savings goals yet. <a href="/metrics">Add one on the Savings page</a>; it appears here with its monthly contribution.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<p class="muted" id="plan-no-match" hidden>No items match.</p>
+<script type="application/json" id="plan-data" nonce="{{ csp_nonce }}">{{ p | tojson }}</script>
+<script src="/static/js/search.js?v={{ css_v('js/search.js') }}"></script>
+<script src="/static/js/planning-search.js?v={{ css_v('js/planning-search.js') }}"></script>
+<script src="/static/js/planning-calendar.js?v={{ css_v('js/planning-calendar.js') }}"></script>
+{% endblock %}

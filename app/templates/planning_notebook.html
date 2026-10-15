@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ v.title }} — Notebook{% endblock %}
+
+{% macro fig_card(fig, sp) -%}
+<div class="fig" data-block="figures">
+  <div class="fig-head"><b>{{ 'The year in figures' if v.kind == 'year' else 'The month in figures' }}</b>
+    <span>{% if v.frozen %}frozen {{ v.entry.frozen_at[:16] | replace('T', ' ') }}{% elif v.open %}live while the {{ v.kind }} is open{% else %}live · frozen on first save{% endif %}</span></div>
+  <div class="fig-row">
+    <div class="fig-nums">
+      <div>Income<strong>{{ fig.income | money }}</strong></div>
+      <div>Spend<strong>{{ fig.expense | money }}</strong></div>
+      <div>Net<strong class="{{ 'pos' if fig.net > 0 else 'neg' if fig.net < 0 else '' }}">{{ fig.net | money(true) }}</strong></div>
+      <div>Savings rate<strong>{{ fig.savings_rate | pct }}</strong></div>
+      <div>Net worth<strong>{{ fig.net_worth | money }}</strong>{% if fig.net_worth_delta is not none %}<small class="{{ 'pos' if fig.net_worth_delta >= 0 else 'neg' }}">{{ fig.net_worth_delta | money(true) }}</small>{% endif %}</div>
+    </div>
+    <svg class="spark" width="{{ sp.w }}" height="{{ sp.h }}" viewBox="0 0 {{ sp.w }} {{ sp.h }}" role="img" aria-label="Net by month, {{ fig.months12[0] }} to {{ fig.months12[-1] }}">
+      <title>Net by month: {{ fig.net12 | map('round') | map('int') | join(', ') }}</title>
+      <path class="spark-area" d="{{ sp.area }}"/>
+      <line class="spark-zero" x1="4" x2="{{ sp.w - 4 }}" y1="{{ sp.zero_y }}" y2="{{ sp.zero_y }}"/>
+      <path class="spark-line" d="{{ sp.line }}"/>
+      <circle class="spark-end" cx="{{ sp.last_x }}" cy="{{ sp.last_y }}" r="3.5"/>
+    </svg>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro miss_card(misses, fig) -%}
+<div class="fig" data-block="misses">
+  <div class="fig-head"><b>Biggest misses vs budget</b><span>{% if fig.budget_version %}“{{ fig.budget_version }}”{% endif %}</span></div>
+  {% if misses %}
+  <div class="miss">
+    {% for m in misses %}<span>{{ m.group }}</span><span>{{ m.actual | money }} of {{ m.budget | money }}</span><span class="neg">+{{ m.over | money }}</span>{% endfor %}
+  </div>
+  {% else %}<p class="muted">Nothing over budget.</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% block content %}
+<div class="b-wrap">
+  <aside class="b-rail">
+    <h3>Entries</h3>
+    {% for g in v.rail.groups %}
+      <div class="yr {{ 'current' if g.current }}"><span>{{ g.year }}</span>
+        <a href="/planning/notebook/{{ g.year }}">Year review{% if g.written %} ✎{% endif %}</a></div>
+      {% for m in g.months %}
+        {% set half = (m.net | abs) / v.rail.max_net * 50 %}
+        <a class="b-mo {{ 'current' if m.current }} {{ 'written' if m.written }}" href="/planning/notebook/{{ m.month }}" data-month="{{ m.month }}">
+          <span class="lbl">{{ m.label }}<span class="dot">{% if m.written %}✎{% endif %}</span></span>
+          <svg class="bar" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+            {% if m.net >= 0 %}<rect class="pos" x="50" y="0" width="{{ '%.1f' % half }}" height="6" rx="2"/>
+            {% else %}<rect class="neg" x="{{ '%.1f' % (50 - half) }}" y="0" width="{{ '%.1f' % half }}" height="6" rx="2"/>{% endif %}
+          </svg>
+          <span class="amt">{{ m.net | money(true) }}</span>
+        </a>
+      {% endfor %}
+    {% endfor %}
+  </aside>
+
+  <article class="b-doc">
+    <div class="b-tools">
+      {% if v.kind == 'month' %}<a class="btn-secondary" href="/planning/month/{{ v.period }}">Month page</a>{% endif %}
+      {% if edit %}
+        <a class="btn-secondary" href="/planning/notebook/{{ v.period }}">Done</a>
+        <button type="button" class="btn-primary" id="nb-save" disabled>Save</button>
+      {% else %}
+        <a class="btn-secondary" href="/planning/notebook/{{ v.period }}?edit=1">✎ {{ 'Edit' if v.entry else 'Write' }}</a>
+      {% endif %}
+    </div>
+    <h1>{{ v.title }}</h1>
+    <div class="b-byline">
+      {% if v.entry %}<span>Written {{ v.entry._created_at[:10] }}</span><span>·</span>
+        <span>{% if v.frozen %}Figures frozen at writing{% elif v.open %}Figures live while the {{ v.kind }} is open{% else %}Figures live{% endif %}</span>
+      {% else %}<span>No entry yet</span><span>·</span><span>figures live</span>{% endif %}
+      <span class="pill {{ 'ok' if v.figures.net >= 0 else 'over' }}">Net {{ v.figures.net | money(true) }}</span>
+      {% if v.figures.budget_total is not none %}
+        {% set over = v.figures.actual_total - v.figures.budget_total %}
+        <span class="pill {{ 'over' if over > 0 else 'ok' }}">Spend {{ over | abs | money }} {{ 'over' if over > 0 else 'under' }} budget</span>
+      {% endif %}
+    </div>
+
+    {% if edit %}
+    <div class="b-editor">
+      <textarea id="nb-body" spellcheck="false" placeholder="Write about {{ v.title }}. Markdown is fine; a line with [[figures]] or [[misses]] places that block.">{{ v.body }}</textarea>
+      <div id="nb-preview" class="b-prose markdown-body">{{ v.preview_html | safe }}</div>
+    </div>
+    <div class="entry-foot"><span class="muted" id="nb-status"></span><span class="muted">Ctrl-S saves · [[figures]] and [[misses]] place the blocks</span></div>
+    {% else %}
+      {% for kind, data in v.blocks %}
+        {% if kind == 'html' %}<div class="b-prose markdown-body">{{ data | safe }}</div>
+        {% elif kind == 'figures' %}{{ fig_card(data, v.sparkline) }}
+        {% else %}{{ miss_card(data, v.figures) }}{% endif %}
+      {% endfor %}
+      {% if not v.body %}<p class="b-empty muted">Nothing written for {{ v.title }} yet. <a href="/planning/notebook/{{ v.period }}?edit=1">Write the entry</a>.</p>{% endif %}
+    {% endif %}
+
+    {% if v.kind == 'month' and (v.open_prompts or v.addressed_count) %}
+    <div class="b-prompts">
+      <h3>Not yet addressed{% if v.addressed_count %} · {{ v.addressed_count }} addressed{% endif %}</h3>
+      {% if v.open_prompts %}
+      <div class="chips" id="nb-chips">{% for p in v.open_prompts %}<button type="button" class="chip" data-prompt-id="{{ p.id }}">{{ p.text }}</button>{% endfor %}</div>
+      {% else %}<p class="muted">Every prompt from the data is in the entry.</p>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="b-next">
+      <a href="/planning/notebook/{{ v.prev }}">← {{ v.prev }}</a>
+      <a href="/planning/notebook/{{ v.next }}">{{ v.next }} →</a>
+    </div>
+  </article>
+</div>
+
+<script nonce="{{ csp_nonce }}">window.NOTEBOOK = {{ {"period": v.period, "body": v.body, "edit": edit} | tojson }};</script>
+<script src="/static/js/planning-notebook.js?v={{ css_v('js/planning-notebook.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Categories — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Categories</h1>
+  <span class="muted">CRUD the lookup tables that drive the category dropdowns. Edits cascade onto existing rows.</span>
+</div>
+
+<div class="categories-tabs" id="ctx-tabs">
+  {% for c in contexts %}
+  <button type="button" class="btn-secondary ctx-tab{% if loop.first %} active{% endif %}"
+          data-slug="{{ c.slug }}">{{ c.label }}</button>
+  {% endfor %}
+</div>
+
+<div class="categories-layout">
+  <aside class="categories-sections">
+    <div class="categories-sections-head"><span id="section-label">Group</span>
+      <button type="button" class="btn-secondary" id="add-section" title="Add a new group">＋</button>
+    </div>
+    <ul id="section-list"></ul>
+  </aside>
+
+  <section class="categories-detail">
+    <div class="grid-toolbar">
+      <h2 id="detail-title" class="categories-detail-title">—</h2>
+      <button type="button" class="btn-secondary" id="add-row">Add</button>
+      <button type="button" class="btn-secondary" id="delete-rows">Delete selected</button>
+      <span id="categories-status" class="muted"></span>
+    </div>
+    <div id="grid" class="ag-theme-quartz categories-grid"></div>
+  </section>
+</div>
+
+<!-- Add-row modal. Fields are rendered per context by categories.js. -->
+<div id="row-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="row-modal-title">
+    <div class="modal-head">
+      <h3 id="row-modal-title">Add</h3>
+      <button type="button" class="modal-close" id="row-close" aria-label="Close">×</button>
+    </div>
+    <form id="row-form" class="acct-form">
+      <div class="acct-form-grid" id="row-fields"></div>
+      <div class="modal-actions">
+        <span id="row-status" class="muted"></span>
+        <button type="button" class="btn-secondary" id="row-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">window.CATEGORIES = { contexts: {{ contexts | tojson }} };</script>
+<script src="/static/js/categories.js?v={{ css_v('js/categories.js') }}"></script>
+{% endblock %}

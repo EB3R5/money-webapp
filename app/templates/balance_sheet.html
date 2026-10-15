@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Balance Sheet — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none or v == 0 -%}<span class="zero">–</span>
+  {%- elif v < 0 -%}<span class="neg">({{ "{:,.0f}".format(-v) }})</span>
+  {%- else -%}{{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% from "_macros.html" import png_button %}
+{% block content %}
+<div class="page-head">
+  <h1>Balance Sheet</h1>
+  {% if months %}<span class="muted">{{ month_abbr[month] }} {{ year }}</span>
+  <form method="get" class="year-picker">
+    {# ui.js submits the form on change (CSP: no inline handlers); the route reads ym=YYYY-M #}
+    <select name="ym" aria-label="Month">
+      {% for y, m in months %}
+      <option value="{{ y }}-{{ m }}" {{ 'selected' if y == year and m == month }}>{{ month_abbr[m] }} {{ y }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {{ png_button('table.pivot', 'balance-sheet.png') }}{% endif %}
+</div>
+
+{% if not months %}
+  <p class="muted">No balance history yet.</p>
+{% else %}
+
+<div class="summary-cards">
+  <div class="card stat"><span class="k">Net worth</span><span class="v">{{ money(net_worth) }}</span>
+    <span class="sub">assets {{ money(assets) }} · liabilities {{ money(liabilities) }}</span></div>
+  <div class="card stat"><span class="k">Income (mo)</span><span class="v pos">{{ money(income) }}</span></div>
+  <div class="card stat"><span class="k">Expenses (mo)</span><span class="v neg">({{ "{:,.0f}".format(expense) }})</span></div>
+  <div class="card stat"><span class="k">Net (mo)</span><span class="v">{{ money(net_income) }}</span></div>
+</div>
+
+<div class="tablewrap report-scroll">
+<table class="pivot">
+  <thead>
+    <tr>
+      <th class="lbl">Class</th><th class="lbl">Account</th>
+      <th class="num">Starting</th><th class="num">Ending</th><th class="num">Max</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sections %}
+      {% for a in s.accounts %}
+      <tr>
+        <td class="lbl">{% if loop.first %}{{ s.cls }}{% endif %}</td>
+        <td class="lbl">{{ a.account }}{% if a.institution %} <span class="muted">· {{ a.institution }}</span>{% endif %}</td>
+        <td class="num">{{ money(a.starting) }}</td>
+        <td class="num">{{ money(a.ending) }}</td>
+        <td class="num">{{ money(a.maxb) }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="subtotal">
+        <td class="lbl"></td><td class="lbl">{{ s.cls }} total</td>
+        <td class="num">{{ money(s.subtotal.starting) }}</td>
+        <td class="num">{{ money(s.subtotal.ending) }}</td>
+        <td class="num">{{ money(s.subtotal.maxb) }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

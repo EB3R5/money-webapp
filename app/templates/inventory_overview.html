@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Inventory Overview — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none -%}<span class="zero">–</span>
+  {%- else -%}${{ "{:,.2f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% from "_macros.html" import png_button %}
+{% block content %}
+<div class="page-head">
+  <h1>Inventory Overview</h1>
+  <span class="muted">by category</span>
+  <span id="sync-status" class="ml-auto muted"></span>
+  <button type="button" class="btn-secondary" id="sync-inventory"
+          title="Pull inventory into the balance sheet as Current Assets">⤓ Sync to Balance Sheet</button>
+  <button type="button" class="btn-secondary" data-print>🖨 Print / PDF</button>
+  {{ png_button('table.pivot', 'inventory-overview.png') }}
+</div>
+
+{% if not rows %}
+  <p class="muted">No inventory items.</p>
+{% else %}
+<table class="pivot">
+  <thead>
+    <tr>
+      <th class="lbl">Category</th>
+      <th class="num">Items</th>
+      <th class="num">Total Qty</th>
+      <th class="num">Total Cost</th>
+      <th class="num">Avg Unit Cost</th>
+      <th class="num">Total Salvage</th>
+      <th class="num">Net Value</th>
+      <th class="num">% of Cost</th>
+      <th class="num">Avg Useful Life</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="lbl">{{ r.category }}</td>
+      <td class="num">{{ r.count }}</td>
+      <td class="num">{{ "{:,.0f}".format(r.qty) }}</td>
+      <td class="num">{{ money(r.cost) }}</td>
+      <td class="num">{{ money(r.avg_unit) }}</td>
+      <td class="num">{{ money(r.salvage) }}</td>
+      <td class="num">{{ money(r.net) }}</td>
+      <td class="num">{{ "{:.1f}%".format(r.pct * 100) }}</td>
+      <td class="num">{{ "{:.1f}".format(r.avg_life) }}{% if r.avg_life %} yrs{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr class="grand">
+      <td class="lbl">Grand Total</td>
+      <td class="num">{{ grand.count }}</td>
+      <td class="num">{{ "{:,.0f}".format(grand.qty) }}</td>
+      <td class="num">{{ money(grand.cost) }}</td>
+      <td class="num">{{ money(grand.avg_unit) }}</td>
+      <td class="num">{{ money(grand.salvage) }}</td>
+      <td class="num">{{ money(grand.net) }}</td>
+      <td class="num">{{ "{:.1f}%".format(grand.pct * 100) }}</td>
+      <td class="num">{{ "{:.1f}".format(grand.avg_life) }}{% if grand.avg_life %} yrs{% endif %}</td>
+    </tr>
+  </tfoot>
+</table>
+{% endif %}
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+  const btn = document.getElementById("sync-inventory");
+  const status = document.getElementById("sync-status");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    if (!confirm("Pull current inventory into the balance sheet as Current Assets? "
+               + "This records a new dated snapshot in Balances; earlier records stay as history.")) return;
+    btn.disabled = true;
+    status.textContent = "Syncing…";
+    fetch("/api/inventory-overview/sync", { method: "POST" })
+      .then((r) => r.json())
+      .then((d) => {
+        status.textContent = d.ok
+          ? "✓ " + d.lines + " line item(s), $" + d.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " → Balances"
+          : "Sync failed";
+      })
+      .catch(() => { status.textContent = "Network error"; })
+      .finally(() => { btn.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

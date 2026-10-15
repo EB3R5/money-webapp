@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ cfg.heading }} — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none -%}<span class="muted">—</span>
+  {%- elif v < 0 -%}<span class="neg">-${{ "{:,.0f}".format(-v) }}</span>
+  {%- else -%}${{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>{{ cfg.heading }}</h1>
+  <span class="muted"><span id="card-count">{{ count }}</span> {{ cfg.noun }}{% if cfg.show_grand %} · <span id="card-grand">{{ money(grand) }}</span>{% endif %}</span>
+  {% if cfg.slug == "inventory" %}
+  <a class="ml-8 btn-secondary" href="/inventory/columns">🗂 Column view</a>
+  {% endif %}
+  {% if cfg.statuses %}
+  {# card-editor.js navigates on change (CSP: no inline handlers), keeping ?group= and ?q= #}
+  <select class="status-filter" aria-label="Status filter">
+    {% for st in cfg.statuses %}
+    <option value="{{ st }}" {{ 'selected' if status == st }}>{{ st|capitalize }}</option>
+    {% endfor %}
+  </select>
+  {% endif %}
+  {% if cfg.group_options %}
+  <span class="group-toggle" role="group" aria-label="Group by">
+    {% for gkey in cfg.group_options %}<a href="/{{ cfg.slug }}?group={{ gkey }}{% if cfg.statuses %}&status={{ status }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}" class="{{ 'active' if group == gkey }}">{{ gkey|capitalize }}</a>{% endfor %}
+  </span>
+  {% endif %}
+  {% if cfg.search_fields %}
+  <input type="search" id="card-search" class="card-search" placeholder="Search {{ cfg.noun }}…" value="{{ q }}" autocomplete="off" aria-label="Search {{ cfg.noun }}" />
+  {% endif %}
+  {% if cfg.can_create %}
+  <button type="button" class="ml-auto btn-primary" id="card-add">➕ Add {{ cfg.item_noun }}</button>
+  {% endif %}
+</div>
+{% if cfg.search_fields %}<p class="muted" id="card-no-match" hidden>No {{ cfg.noun }} match.</p>{% endif %}
+
+{% if banner and cfg.banner_template %}{% include cfg.banner_template %}{% endif %}
+
+{% for s in sections %}
+<section class="acct-section">
+  <div class="acct-section-head">
+    <h2>{{ s.label }}</h2>
+    <span class="muted acct-section-total">{{ money(s.total) }}</span>
+  </div>
+  <div class="acct-grid">
+    {% for i in s.entries %}
+    {# A <div role="button"> (not a <button>) so a link_field <a> can nest legally inside it;
+       card-editor.js binds by class and adds keyboard activation. #}
+    <div role="button" tabindex="0" class="acct-card{{ ' has-thumb' if cfg.images_enabled and i._images }}" data-id="{{ i._id }}">
+      {% if cfg.images_enabled %}
+      <span class="acct-thumb">{% if i._images %}<img src="/api/{{ cfg.slug }}/image/{{ i._images[0].id }}" alt="" loading="lazy" />{% endif %}</span>
+      {% endif %}
+      <span class="acct-name">{{ i._title }}</span>
+      <span class="acct-amount {{ 'neg' if (i._amount or 0) < 0 }}">{{ money(i._amount) }}</span>
+      {% if i._subtitle %}<span class="acct-cat muted">{{ i._subtitle }}</span>{% endif %}
+      {% if cfg.link_field and i[cfg.link_field] and i[cfg.link_field].startswith('http') %}
+      <a class="acct-link" href="{{ i[cfg.link_field] }}" target="_blank" rel="noopener"
+         title="Open link" aria-label="Open link in a new tab">↗</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+{% include "_card_modal.html" %}
+
+<script nonce="{{ csp_nonce }}">window.CARD = {
+  data: {{ sections | tojson }},
+  fields: {{ fields | tojson }},
+  idField: {{ cfg.id_field | tojson }},
+  titleField: {{ cfg.title_field | tojson }},
+  imagesEnabled: {{ cfg.images_enabled | tojson }},
+  documentsEnabled: {{ cfg.documents_enabled | tojson }},
+  kitsEnabled: {{ cfg.kits_enabled | tojson }},
+  searchFields: {{ cfg.search_fields | tojson }},
+  extra: {{ cfg.client_config | tojson }},
+};</script>
+<script src="/static/js/search.js?v={{ css_v('js/search.js') }}"></script>
+<script src="/static/js/card-editor.js?v={{ css_v('js/card-editor.js') }}"></script>
+<script src="/static/js/{{ cfg.slug }}.js?v={{ css_v('js/' ~ cfg.slug ~ '.js') }}"></script>
+{% endblock %}

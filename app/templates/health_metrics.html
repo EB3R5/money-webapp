@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Financial Health — Money{% endblock %}
+
+{% macro num(v) -%}
+  {%- if v is none -%}<span class="muted">N/A</span>
+  {%- elif v is string -%}{{ v }}
+  {%- elif v < 0 -%}<span class="neg">({{ "{:,.2f}".format(-v) }})</span>
+  {%- else -%}{{ "{:,.2f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro money(v) -%}
+  {%- if v is none -%}–{%- elif v < 0 -%}<span class="neg">({{ "{:,.0f}".format(-v) }})</span>
+  {%- else -%}{{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Financial Health</h1>
+  <span class="muted">{{ current.period if current else 'new period' }}</span>
+  {% if periods %}
+  <form method="get" class="year-picker">
+    <select name="period">
+      {% for p in periods %}<option value="{{ p.id }}" {{ 'selected' if current and p.id == current.id }}>{{ p.period }}</option>{% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
+
+{% set calc = result.calc %}
+<div class="summary-cards">
+  <div class="card stat"><span class="k">Total assets</span><span class="v">{{ money(calc.total_assets) }}</span></div>
+  <div class="card stat"><span class="k">Total equity</span><span class="v pos">{{ money(calc.total_equity) }}</span></div>
+  <div class="card stat"><span class="k">Net income</span><span class="v {{ 'neg' if calc.net_income < 0 else 'pos' }}">{{ money(calc.net_income) }}</span></div>
+  <div class="card stat"><span class="k">Free cash flow</span><span class="v {{ 'neg' if calc.free_cash_flow < 0 else '' }}">{{ money(calc.free_cash_flow) }}</span></div>
+</div>
+
+<div class="card">
+  <h2>Composite judgments</h2>
+  <div class="summary-cards">
+    {% for c in result.composites %}
+    <div class="card stat">
+      <span class="k">{{ c.name }}</span>
+      <span class="v">{{ c.rating.emoji }} {{ c.score if c.score is not none else '—' }}</span>
+      <span class="fs-78 muted">{{ c.rating.label }} · {{ c.what }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="muted">Score 70–100 ✅ strong · 40–69 ⚠️ moderate · 0–39 🚩 weak.
+    Fragility &amp; Dependence are inverted (higher = worse). Composites cap at 100 but can go negative when inputs are deeply unprofitable.</p>
+</div>
+
+<div class="card">
+  <h2>Ratio analysis</h2>
+  {% for category, rows in result.ratios|groupby('category') %}
+  <h3>{{ category }}</h3>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="lbl">Ratio</th><th class="num">Value</th><th class="lbl">Benchmark</th><th class="lbl">Interpretation</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr><td class="lbl">{{ r.name }}</td><td class="num">{{ num(r.value) }}</td>
+        <td class="lbl muted">{{ r.benchmark }}</td><td class="lbl muted">{{ r.interpretation }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Financial data inputs</h2>
+  <p class="muted">Enter one period's figures, name it, and save — all ratios recompute.
+    Calculated subtotals: Total assets {{ money(calc.total_assets) }} · Equity {{ money(calc.total_equity) }}
+    · EBIT {{ money(calc.ebit) }} · Net income {{ money(calc.net_income) }}.</p>
+  <p class="muted">Hover any field label for a definition of what to enter.</p>
+  <form id="health-form">
+    <label class="maxw-24 field"><span>Period name</span>
+      <input name="period" required value="{{ current.period if current else '' }}" placeholder="FY 2025 / TTM Q1 2026"></label>
+    {% for section, fields in sections %}
+    <h3>{{ section }}</h3>
+    <div class="acct-form-grid">
+      {% for key, label, help in fields %}
+      <label class="field">
+        <span>{{ label }} <span class="help-dot" data-tip="{{ help }}">ⓘ</span></span>
+        <input name="{{ key }}" type="number" step="0.01" value="{{ inputs.get(key, '') }}"
+               title="{{ help }}"></label>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <div class="mt-1">
+      <button type="submit" class="btn-primary">Save &amp; recompute</button>
+      {% if current %}<button type="button" id="delete-period" class="btn-secondary" data-id="{{ current.id }}">Delete period</button>{% endif %}
+    </div>
+  </form>
+</div>
+
+<script src="/static/js/health_metrics.js?v={{ css_v('js/health_metrics.js') }}"></script>
+{% endblock %}

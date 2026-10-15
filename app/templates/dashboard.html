@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <span class="muted">spending overview</span>
+</div>
+
+<div class="chart-grid">
+  <div class="card">
+    <h2>Monthly cash flow</h2>
+    <div id="chart-monthly" class="chart"></div>
+  </div>
+  <div class="card">
+    <h2>Top spending categories</h2>
+    <div id="chart-category" class="chart"></div>
+  </div>
+</div>
+
+<script src="/static/vendor/echarts.min.js"></script>
+<script src="/static/js/chart-theme.js?v={{ css_v('js/chart-theme.js') }}"></script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

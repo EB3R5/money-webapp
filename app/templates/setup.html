@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Set up · Money</title>
+  <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+  <link rel="stylesheet" href="/static/css/app.css?v={{ css_v() }}" />
+</head>
+<body>
+  <main class="login">
+    <form class="login-card" method="post" action="/setup">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+      <img class="login-mark" src="/static/img/mark.png" alt="" width="44" height="44" />
+      <h1>Money</h1>
+      <p class="muted">No account exists yet. Choose the first one; it is the admin, and it can invite the others.</p>
+      {% for e in errors %}<p class="login-error" role="alert">{{ e }}</p>{% endfor %}
+      <label>Username
+        <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required value="{{ username }}" />
+      </label>
+      <label>Password
+        <input id="password1" name="password1" type="password" autocomplete="new-password" minlength="12" required />
+      </label>
+      <label>Password, again
+        <input id="password2" name="password2" type="password" autocomplete="new-password" minlength="12" required />
+      </label>
+      <p class="muted">At least twelve characters; not a common password; not your username.</p>
+      <button type="submit">Create the account</button>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=money
+Comment=Personal finance ledger
+Exec=@@REPO@@/packaging/desktop/linux/run.sh
+Icon=money
+Terminal=false
+Categories=Office;
+StartupWMClass=money

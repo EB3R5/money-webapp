@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Data — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Data</h1>
+  <select id="table" class="sheet-select">
+    {% for t in tables %}
+    <option value="{{ t.name }}" data-editable="{{ 'true' if t.editable else 'false' }}">{{ t.name }} ({{ "{:,}".format(t.count) }}){% if not t.editable %} · read-only{% endif %}</option>
+    {% endfor %}
+  </select>
+  <input id="search" type="search" placeholder="Search…" />
+  <span id="status" class="muted"></span>
+</div>
+
+<div id="grid" class="ag-theme-quartz"></div>
+<script src="/static/js/grid-factory.js?v={{ css_v('js/grid-factory.js') }}"></script>
+<script src="/static/js/data.js?v={{ css_v('js/data.js') }}"></script>
+{% endblock %}

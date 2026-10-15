@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Categorization — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Categorization</h1>
+  <span class="muted">Rules fire first-match-wins in order; the ML model only suggests. Both feed the Ledger.</span>
+</div>
+
+<div class="categories-tabs" id="cat-tabs">
+  <button type="button" class="btn-secondary ctx-tab active" data-tab="rules">Rules</button>
+  <button type="button" class="btn-secondary ctx-tab" data-tab="ml">ML model</button>
+</div>
+
+<section id="tab-rules">
+  <div class="grid-toolbar">
+    <button type="button" class="btn-secondary" id="add-rule">Add rule</button>
+    <button type="button" class="btn-secondary" id="delete-rules">Delete selected</button>
+    <button type="button" class="btn-secondary" id="preview-btn" title="Rescan every transaction and refresh the Matches / Wins / Uncategorized counts">Refresh counts</button>
+    <span id="rules-status" class="muted"></span>
+  </div>
+  <div class="rules-layout">
+    <div id="grid" class="ag-theme-quartz categorization-grid"></div>
+    <aside id="rule-test" class="rule-test">
+      <div class="suggest-head"><strong>Test a transaction</strong></div>
+      <form id="rule-test-form" class="rule-test-form">
+        <label class="field"><span>Description</span><input type="text" name="Description" /></label>
+        <label class="field"><span>Account</span><input type="text" name="Account" /></label>
+        <label class="field"><span>Institution</span><input type="text" name="Institution" /></label>
+        <label class="field"><span>Amount</span><input type="text" name="Amount" placeholder="-12.34" /></label>
+        <button type="submit" class="btn-secondary" id="rule-test-run">▶ Test</button>
+      </form>
+      <div class="suggest-section">
+        <div class="suggest-label muted">Rule</div>
+        <div id="rule-test-rule" class="muted">—</div>
+      </div>
+      <div class="suggest-section">
+        <div class="suggest-label muted">ML model</div>
+        <div id="rule-test-ml" class="muted">—</div>
+      </div>
+      <div class="suggest-section">
+        <div class="suggest-label muted">Samples</div>
+        <div id="rule-samples" class="muted">Click a Matches / Wins / Uncategorized count.</div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section id="tab-ml" hidden>
+  <div class="ml-layout">
+    <div class="ml-panel">
+      <h2 class="categories-detail-title">Current model</h2>
+      <table class="model-info" id="model-info">
+        <tr><td>Status</td><td id="model-status" class="muted">Loading…</td></tr>
+        <tr><td>Trained at</td><td data-k="trained_at"></td></tr>
+        <tr><td>Rows trained</td><td data-k="rows_trained"></td></tr>
+        <tr><td>Categories</td><td data-k="n_categories"></td></tr>
+        <tr><td>scikit-learn</td><td data-k="sklearn_version"></td></tr>
+        <tr><td>SHA-256</td><td data-k="sha256" class="mono"></td></tr>
+        <tr><td>File</td><td data-k="path" class="mono"></td></tr>
+        <tr><td>Source</td><td data-k="source"></td></tr>
+      </table>
+      <p class="muted">Suggestions below a confidence of <strong id="conf-min">{{ conf_min }}</strong> are hidden
+        (<code>ML_CONF_MIN</code>). Retraining needs at least <strong id="min-rows">—</strong> categorized transactions.</p>
+    </div>
+    <div class="ml-panel">
+      <h2 class="categories-detail-title">Retrain</h2>
+      <p class="muted">Rebuild the model from the categorized transactions. Filters are optional; blank means all.</p>
+      <form id="retrain-form" class="rule-test-form">
+        <label class="field"><span>Start date</span><input type="date" name="start_date" /></label>
+        <label class="field"><span>End date</span><input type="date" name="end_date" /></label>
+        <label class="field"><span>Accounts (comma-separated)</span><input type="text" name="accounts" placeholder="Checking, Visa" /></label>
+        <button type="submit" class="btn-primary" id="retrain-btn">Retrain model</button>
+        <span id="retrain-status" class="muted"></span>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Add-rule modal (same ids as the Categories page modal). -->
+<div id="row-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="row-modal-title">
+    <div class="modal-head">
+      <h3 id="row-modal-title">Add rule</h3>
+      <button type="button" class="modal-close" id="row-close" aria-label="Close">×</button>
+    </div>
+    <form id="row-form" class="acct-form">
+      <div class="acct-form-grid" id="row-fields"></div>
+      <div class="modal-actions">
+        <span id="row-status" class="muted"></span>
+        <button type="button" class="btn-secondary" id="row-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">window.CATEGORIZATION = { categories: {{ categories | tojson }}, ruleFields: {{ rule_fields | tojson }}, confMin: {{ conf_min | tojson }} };</script>
+<script src="/static/js/categorization.js?v={{ css_v('js/categorization.js') }}"></script>
+{% endblock %}

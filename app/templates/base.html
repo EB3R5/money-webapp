@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Money{% endblock %}</title>
+  <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+
+  <!-- AG Grid Community (Infinite Row Model) -->
+  <link rel="stylesheet" href="/static/vendor/ag-grid.css" />
+  <link rel="stylesheet" href="/static/vendor/ag-theme-quartz.css" />
+  <script src="/static/vendor/ag-grid-community.min.noStyle.js"></script>
+
+  <link rel="stylesheet" href="/static/css/app.css?v={{ css_v() }}" />
+  <meta name="csrf-token" content="{{ csrf_token }}" />
+  <script src="/static/js/csrf.js?v={{ css_v('js/csrf.js') }}"></script>
+  <script src="/static/js/ui.js?v={{ css_v('js/ui.js') }}"></script>
+</head>
+<body class="pad">
+  <aside class="stub">
+    <a class="brand" href="/"><img src="/static/img/mark.png" alt="" width="28" height="28" />Money</a>
+    <nav aria-label="Sections">
+      <a class="top" href="/">Ledger</a>
+      <details class="group">
+        <summary>Accounts</summary>
+        <a href="/balances">Balances</a>
+        <a href="/accounts">Accounts</a>
+        <a href="/investments">Investments</a>
+        <a href="/data">Data</a>
+      </details>
+      <details class="group">
+        <summary>Reports</summary>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/category-insights">Category insights</a>
+        <a href="/pnl">Profit and loss</a>
+        <a href="/balance-sheet">Balance sheet</a>
+        <a href="/budgets">Budgets</a>
+        <a href="/budgets/pivot">Budget pivots</a>
+        <a href="/metrics">Savings</a>
+        <a href="/credit">Credit</a>
+        <a href="/tax">Tax</a>
+        <a href="/health-analysis">Health</a>
+      </details>
+      <details class="group">
+        <summary>Planning</summary>
+        <a href="/planning/month">Month</a>
+        <a href="/planning/notebook">Notebook</a>
+        <a href="/planning/planner">Planner</a>
+        <a href="/planning/income">Income</a>
+        <a href="/planning/year">Year plan</a>
+        <a href="/planning/calendar">Calendar</a>
+        <a href="/planning/projected">Projected P&amp;L</a>
+      </details>
+      <details class="group">
+        <summary>Categories</summary>
+        <a href="/categories">Categories</a>
+        <a href="/categorization">Categorization</a>
+        <a href="/activity">Activity</a>
+      </details>
+      <details class="group">
+        <summary>Inventory</summary>
+        <a href="/inventory">Items</a>
+        <a href="/inventory/columns">Columns</a>
+        <a href="/inventory-overview">Overview</a>
+        <a href="/software">Software</a>
+        <a href="/kits">Kits</a>
+        <a href="/clippers">Clippers</a>
+      </details>
+      <details class="group">
+        <summary>Settings</summary>
+        {% if request.user.is_superuser %}<a href="/settings/users">Users</a>{% endif %}
+        <a href="/settings/feed">Feed</a>
+        <a href="/account">Account</a>
+      </details>
+    </nav>
+    <form class="logout" method="post" action="/logout">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+      <button type="submit">Log out</button>
+    </form>
+  </aside>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script nonce="{{ csp_nonce }}">
+    // Mark the current page's link and open the group it sits in; the other groups stay folded.
+    (function () {
+      var path = location.pathname;
+      document.querySelectorAll('.stub nav a').forEach(function (a) {
+        var href = a.getAttribute('href');
+        var hit = href === '/' ? path === '/' : path.indexOf(href) === 0;
+        if (!hit) return;
+        a.classList.add('active');
+        a.setAttribute('aria-current', 'page');
+        var group = a.closest('details');
+        if (group) { group.open = true; group.classList.add('active'); }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Budget Pivot — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none or v == 0 -%}<span class="zero">–</span>
+  {%- elif v < 0 -%}<span class="neg">({{ "{:,.0f}".format(-v) }})</span>
+  {%- else -%}{{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% from "_macros.html" import png_button %}
+{% block content %}
+<div class="page-head">
+  <h1>Budget Pivot</h1>
+  <span class="muted">Budget vs Actual per group across {{ versions | length }} version(s)</span>
+  {% if versions %}{{ png_button('table.bva-pivot', 'budget-pivot.png') }}{% endif %}
+  <a class="ml-auto btn-secondary" href="/budgets">← Budgets</a>
+</div>
+
+{% if not versions %}
+  <p class="muted">No budgets yet — create one to compare versions here.</p>
+{% else %}
+<div class="tablewrap report-scroll">
+<table class="pivot bva-pivot">
+  <thead>
+    <tr>
+      <th class="lbl" rowspan="2">Section</th><th class="lbl" rowspan="2">Group</th>
+      {% for v in versions %}<th class="num bva-vhead" colspan="2" title="{{ v.budgetId }}">{{ v.label }} <span class="muted">{{ v.month }}</span></th>{% endfor %}
+    </tr>
+    <tr>
+      {% for v in versions %}<th class="num bva-sub">Budget</th><th class="num bva-sub">Actual</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in table.sections %}
+      {% for r in s.rows %}
+      <tr>
+        <td class="lbl">{% if loop.first %}{{ s.label }}{% endif %}</td>
+        <td class="lbl">{{ r.group }}</td>
+        {% for v in versions %}
+          {% if v.key in r.budget %}
+          <td class="num">{{ money(r.budget[v.key]) }}</td>
+          <td class="num {{ r.fmt.get(v.key, '') }}">{{ money(r.actual[v.key]) }}</td>
+          {% else %}
+          <td class="num"><span class="zero">–</span></td><td class="num"><span class="zero">–</span></td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      <tr class="subtotal">
+        <td class="lbl"></td><td class="lbl">{{ s.label }} total</td>
+        {% for v in versions %}
+        <td class="num">{{ money(s.subtotals[v.key ~ '|b']) }}</td>
+        <td class="num">{{ money(s.subtotals[v.key ~ '|a']) }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr class="grand">
+      <td class="lbl"></td><td class="lbl">Total</td>
+      {% for v in versions %}
+      <td class="num">{{ money(table.totals[v.key ~ '|b']) }}</td>
+      <td class="num">{{ money(table.totals[v.key ~ '|a']) }}</td>
+      {% endfor %}
+    </tr>
+  </tfoot>
+</table>
+</div>
+
+<p class="muted bva-legend">
+  Actual cells are colored by Budget-vs-Actual: <span class="bva-good">favorable</span>,
+  <span class="bva-bad1">over (medium)</span>, <span class="bva-bad2">over (high)</span>,
+  <span class="bva-bad3">over (critical)</span>, <span class="bva-unb">unbudgeted</span> (spend that month
+  with no line in that version). Income is judged inversely (earning more is favorable).
+</p>
+
+<style nonce="{{ csp_nonce }}">
+  .bva-pivot .bva-vhead { text-align: center; border-bottom: 1px solid var(--rule); }
+  .bva-pivot .bva-sub { font-size: 11px; color: var(--ink); font-weight: 700; }
+  .bva-pivot td.bva-good { background: var(--bank-green-tint); color: var(--bank-green); }
+  .bva-pivot td.bva-bad1 { background: var(--amber-tint); color: var(--amber); }
+  .bva-pivot td.bva-bad2 { background: var(--red-ink-tint); color: var(--red-ink); }
+  .bva-pivot td.bva-bad3 { background: var(--red-ink-tint); color: var(--red-ink); font-weight: 600; }
+  .bva-pivot td.bva-unb, .bva-legend .bva-unb { background: var(--rule-soft); color: var(--ink); font-style: italic; }
+  .bva-legend { margin-top: 10px; }
+  .bva-legend span { padding: 1px 6px; border-radius: 4px; }
+</style>
+{% endif %}
+{% endblock %}

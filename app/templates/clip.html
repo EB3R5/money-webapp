@@ -1,0 +1,129 @@
+{# The clip popup every clipper shares: `cfg` (slug, heading, noun, fields, …) rides to
+   clip.js as window.CLIP, which talks to /api/<slug>/… . #}
+{% extends "base.html" %}
+{% block title %}Clip — {{ cfg.heading }} — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 id="clip-title">Clip to {{ cfg.heading }}</h1>
+  <span class="muted" id="clip-sub"></span>
+</div>
+
+<div class="clip" id="clip">
+  <div class="clip-notice" id="clip-notice" hidden></div>
+
+  <!-- source page strip -->
+  <div class="clip-source" id="clip-source" hidden>
+    <span class="muted">From</span> <a id="clip-source-link" target="_blank" rel="noopener"></a>
+  </div>
+
+  <!-- picker: which Item to update -->
+  <section class="clip-picker" id="clip-picker" hidden>
+    <div class="clip-picker-head">
+      <b id="clip-picker-title">Which {{ cfg.noun }} is this?</b>
+      <span class="muted" id="clip-picker-hint"></span>
+    </div>
+    <input type="search" id="clip-q" placeholder="{{ cfg.search_placeholder }}" autocomplete="off" />
+    <div class="clip-results" id="clip-results"></div>
+    <div class="clip-picker-actions">
+      <button type="button" class="btn-primary" id="clip-add-new">＋ Add as a new {{ cfg.noun }}</button>
+    </div>
+  </section>
+
+  <!-- diff / add table -->
+  <section id="clip-editor" hidden>
+    <div class="clip-mode" id="clip-mode"></div>
+    <table class="clip-table" id="clip-table">
+      <thead><tr id="clip-thead"></tr></thead>
+      <tbody id="clip-rows"></tbody>
+    </table>
+
+    <div class="clip-images">
+      <div class="clip-images-head"><b>Images</b> <span class="muted" id="clip-images-hint"></span></div>
+      <div class="clip-images-cols">
+        <div id="clip-images-current-wrap" hidden>
+          <div class="muted">Current</div>
+          <div class="clip-thumbs" id="clip-images-current"></div>
+        </div>
+        <div>
+          <div class="muted">From the page — tick to attach</div>
+          <div class="clip-thumbs" id="clip-images-new"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="clip-actions">
+      <button type="button" class="btn-primary" id="clip-apply" disabled>Apply</button>
+      <button type="button" class="btn-secondary" id="clip-cancel">Cancel</button>
+      <span class="muted" id="clip-status"></span>
+    </div>
+  </section>
+
+  <!-- result -->
+  <section class="clip-result" id="clip-result" hidden>
+    <div id="clip-result-msg"></div>
+    <ul id="clip-result-images" class="clip-result-images"></ul>
+    <div class="clip-upload" id="clip-upload" hidden>
+      <div class="clip-drop" id="clip-drop">
+        Image download failed? <b>Drag the image from the store tab here</b>, paste it (⌘V), or
+        <label class="clip-file"><input type="file" id="clip-file" accept="image/*" multiple hidden />choose a file</label>.
+      </div>
+    </div>
+    <div class="clip-actions">
+      <a class="btn-primary" href="{{ cfg.board_url }}" target="_blank" rel="noopener">Open {{ cfg.heading }}</a>
+      <button type="button" class="btn-secondary" id="clip-close">Close</button>
+    </div>
+  </section>
+</div>
+
+<style nonce="{{ csp_nonce }}">
+  .clip { max-width: 900px; }
+  .clip-notice { background: var(--amber-tint); border: 1px solid var(--amber); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+  .clip-notice.err { background: var(--red-ink-tint); border-color: var(--red-ink); }
+  .clip-source { font-size: 13px; margin-bottom: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .clip-picker { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; background: var(--panel); }
+  .clip-picker-head { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; }
+  .clip-picker input[type=search] { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; }
+  .clip-results { max-height: 260px; overflow-y: auto; margin: 8px 0; }
+  .clip-hit { display: grid; grid-template-columns: 88px 1fr auto; gap: 10px; padding: 7px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13px; align-items: center; }
+  .clip-hit:hover { background: rgba(0,0,0,.05); }
+  .clip-hit.sel { background: var(--accent); color: #fff; }
+  .clip-hit .id { font-family: ui-monospace, Menlo, monospace; font-size: 12px; opacity: .8; }
+  .clip-hit .meta { font-size: 12px; opacity: .75; }
+  .clip-picker-actions { display: flex; gap: 8px; align-items: center; }
+  .clip-mode { display: flex; gap: 12px; align-items: baseline; margin: 6px 0 10px; font-size: 14px; flex-wrap: wrap; }
+  .clip-mode a { font-size: 13px; }
+  .clip-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .clip-table th { text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .clip-table td { padding: 6px 10px; border-bottom: 1px solid rgba(0,0,0,.06); vertical-align: middle; }
+  .clip-table tr:last-child td { border-bottom: none; }
+  .clip-table td.f { width: 120px; font-weight: 600; white-space: nowrap; }
+  .clip-table td.cur { color: var(--muted); max-width: 260px; word-break: break-word; }
+  .clip-table td.apply { width: 60px; text-align: center; }
+  .clip-table tr.dim td { opacity: .45; }
+  .clip-table tr.diff td.new { background: var(--amber-tint); }
+  .clip-table input[type=text], .clip-table select, .clip-table textarea { width: 100%; box-sizing: border-box; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: #fff; }
+  .clip-table textarea { min-height: 48px; resize: vertical; }
+  .clip-table .same { font-size: 11px; color: var(--muted); }
+  .clip-images { margin-top: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+  .clip-images-head { margin-bottom: 6px; font-size: 13px; }
+  .clip-images-cols { display: grid; grid-template-columns: auto 1fr; gap: 18px; }
+  .clip-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .clip-thumb { position: relative; width: 96px; height: 96px; border-radius: var(--radius); overflow: hidden; background: var(--paper); border: 2px solid transparent; }
+  .clip-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .clip-thumb.on { border-color: var(--accent); }
+  .clip-thumb.bad { display: none; }
+  .clip-thumb label { position: absolute; inset: 0; cursor: pointer; }
+  .clip-thumb input { position: absolute; top: 4px; left: 4px; }
+  .clip-actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+  .clip-result { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; font-size: 14px; }
+  .clip-result-images { list-style: none; padding: 0; margin: 8px 0 0; font-size: 13px; }
+  .clip-result-images li.ok { color: var(--bank-green); }
+  .clip-result-images li.fail { color: var(--red-ink); }
+  .clip-drop { margin-top: 12px; border: 2px dashed var(--border); border-radius: var(--radius); padding: 18px; text-align: center; font-size: 13px; color: var(--muted); }
+  .clip-drop.over { border-color: var(--accent); background: rgba(79,107,140,.06); }
+  .clip-file { color: var(--accent); cursor: pointer; text-decoration: underline; }
+</style>
+<script nonce="{{ csp_nonce }}">window.CLIP = {{ cfg | tojson }};</script>
+<script src="/static/js/clip.js?v={{ css_v('js/clip.js') }}"></script>
+{% endblock %}

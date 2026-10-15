@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ budget.versionName }} — Budget vs Actual{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <a href="/budgets/{{ budget.id }}" class="muted">← Editor</a>
+  <h1>Budget vs Actual</h1>
+  <span class="muted">{{ budget.versionName }} · {{ budget.month }} · {{ budget.budgetId }}</span>
+  <span class="grid-toolbar">
+    <span class="budget-total">Budget <strong>{{ "${:,.2f}".format(summary.budget_total) }}</strong></span>
+    <span class="budget-total">Actual <strong>{{ "${:,.2f}".format(summary.actual_total) }}</strong></span>
+    <span class="budget-total">On target <strong>{{ summary.on_target }}/{{ summary.rows }}</strong></span>
+    <span class="budget-total" title="Groups with spend this month but no budget line">Unbudgeted <strong>{{ summary.unbudgeted }}</strong></span>
+    <span class="budget-total" title="Budget lines with no activity this month">No activity <strong>{{ summary.budget_only }}</strong></span>
+  </span>
+</div>
+
+<div id="grid" class="ag-theme-quartz"></div>
+
+<script nonce="{{ csp_nonce }}">window.REPORT = { rows: {{ rows | tojson }} };</script>
+<script src="/static/js/budget-report.js?v={{ css_v('js/budget-report.js') }}"></script>
+{% endblock %}

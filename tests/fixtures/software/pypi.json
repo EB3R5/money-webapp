@@ -1,0 +1,23 @@
+{
+  "info": {
+    "name": "httpx",
+    "version": "0.28.1",
+    "summary": "The next generation HTTP client.",
+    "home_page": null,
+    "project_urls": {
+      "Changelog": "https://github.com/encode/httpx/blob/master/CHANGELOG.md",
+      "Documentation": "https://www.python-httpx.org",
+      "Homepage": "https://github.com/encode/httpx",
+      "Source": "https://github.com/encode/httpx"
+    },
+    "license": "BSD-3-Clause",
+    "license_expression": null,
+    "author": null,
+    "author_email": "Tom Christie <tom@tomchristie.com>",
+    "classifiers": [
+      "Development Status :: 4 - Beta",
+      "Environment :: Web Environment",
+      "Framework :: AsyncIO"
+    ]
+  }
+}

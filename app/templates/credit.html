@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Credit — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none -%}<span class="zero">–</span>
+  {%- elif v == 0 -%}<span class="zero">0</span>
+  {%- elif v < 0 -%}<span class="neg">({{ "{:,.0f}".format(-v) }})</span>
+  {%- else -%}{{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro pct(v) -%}{% if v is none %}—{% else %}{{ "{:.1f}%".format(v * 100) }}{% endif %}{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Credit</h1>
+  <span class="muted">registry, score, utilization &amp; strategy</span>
+</div>
+
+{% set s = summary %}
+<div class="summary-cards">
+  <div class="card stat"><span class="k">Credit score</span><span class="v">{{ s.score.current or '—' }}</span></div>
+  <div class="card stat"><span class="k">Overall utilization</span>
+    <span class="v {{ 'pos' if s.accounts.overall_util <= 0.30 else 'neg' }}">{{ pct(s.accounts.overall_util) }}</span></div>
+  <div class="card stat"><span class="k">Total owed</span><span class="v neg">{{ money(s.accounts.total_balance) }}</span></div>
+  <div class="card stat"><span class="k">Total limit</span><span class="v">{{ money(s.accounts.total_limit) }}</span></div>
+  <div class="card stat"><span class="k">Next milestone</span><span class="fs-95 v">{{ s.score.next_milestone }}</span></div>
+</div>
+
+<div class="card">
+  <h2>Credit score history</h2>
+  {% if scores %}<div id="chart-score" class="chart"></div>{% else %}
+  <p class="muted">No scores logged yet — add one below.</p>{% endif %}
+  <div class="tablewrap report-scroll">
+  <table class="mt-1 pivot">
+    <thead><tr><th class="lbl">Date</th><th class="lbl">Bureau</th><th class="num">Score</th><th class="num">Change</th><th class="lbl">Notes</th><th></th></tr></thead>
+    <tbody>
+      {% for r in scores %}
+      <tr>
+        <td class="lbl">{{ r.date }}</td><td class="lbl">{{ r.bureau or '—' }}</td>
+        <td class="num">{{ r.score }}</td>
+        <td class="num {{ 'pos' if (r.change or 0) > 0 else 'neg' if (r.change or 0) < 0 else '' }}">{{ r.change if r.change is not none else '—' }}</td>
+        <td class="lbl muted">{{ r.notes or '' }}</td>
+        <td><button type="button" class="btn-secondary" data-del-score="{{ r.id }}">Delete</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form id="score-form" class="mt-1 acct-form-grid">
+    <label class="field"><span>Date</span><input name="date" type="date"></label>
+    <label class="field"><span>Bureau</span><input name="bureau" list="bureaus" placeholder="Equifax"></label>
+    <label class="field"><span>Score</span><input name="score" type="number" min="300" max="850" required></label>
+    <label class="field"><span>Change</span><input name="change" type="number"></label>
+    <label class="field"><span>Notes</span><input name="notes"></label>
+    <button type="submit" class="btn-primary">Log score</button>
+  </form>
+  <datalist id="bureaus"><option value="Equifax"><option value="Experian"><option value="TransUnion"></datalist>
+</div>
+
+<div class="card">
+  <h2>Accounts</h2>
+  <p class="muted">Limit / APR / min payment are stored here. Balance &amp; utilization are pulled
+    live from balance history via the “Balance account” alias.</p>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr>
+      <th class="lbl">Name</th><th class="lbl">Type</th><th class="lbl">Status</th>
+      <th class="num">Limit</th><th class="num">Balance</th><th class="num">Util</th>
+      <th class="num">APR</th><th class="num">Min</th><th class="num">Fee</th>
+      <th class="lbl">Opened</th><th class="lbl">Balance acct</th><th></th>
+    </tr></thead>
+    <tbody>
+      {% for a in accounts %}
+      <tr {{ 'style=opacity:.55' if not a.active }}>
+        <td class="lbl">{{ a.name }}</td><td class="lbl">{{ a.type or '—' }}</td>
+        <td class="lbl">{{ a.status }}</td>
+        <td class="num">{{ money(a.credit_limit) }}</td>
+        <td class="num">{{ money(a.balance) }}</td>
+        <td class="num {{ 'neg' if a.utilization and a.utilization > 0.30 else '' }}">{{ pct(a.utilization) }}</td>
+        <td class="num">{{ pct(a.apr) }}</td>
+        <td class="num">{{ money(a.min_payment) }}</td>
+        <td class="num">{{ money(a.annual_fee) }}</td>
+        <td class="lbl muted">{{ a.opened_date or '—' }}</td>
+        <td class="lbl muted">{{ a.balance_account or '—' }}</td>
+        <td><button type="button" class="btn-secondary" data-del-account="{{ a.id }}">Delete</button></td>
+      </tr>
+      {% else %}
+      <tr><td class="muted" colspan="12">No accounts yet — add one below.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form id="account-form" class="mt-1 acct-form-grid">
+    <label class="field"><span>Name</span><input name="name" required></label>
+    <label class="field"><span>Type</span><input name="type" list="acct-types" placeholder="Credit Card"></label>
+    <label class="field"><span>Status</span>
+      <select name="status"><option>Active</option><option>Considering</option><option>Closed</option></select></label>
+    <label class="field"><span>Credit limit</span><input name="credit_limit" type="number" step="0.01"></label>
+    <label class="field"><span>APR (%)</span><input name="apr" type="number" step="0.01"></label>
+    <label class="field"><span>Min payment</span><input name="min_payment" type="number" step="0.01"></label>
+    <label class="field"><span>Annual fee</span><input name="annual_fee" type="number" step="0.01"></label>
+    <label class="field"><span>Opened date</span><input name="opened_date" type="date"></label>
+    <label class="field"><span>Balance account</span><input name="balance_account" list="balance-accts" placeholder="(matches balance history)"></label>
+    <label class="field"><span>Notes</span><input name="notes"></label>
+    <button type="submit" class="btn-primary">Add account</button>
+  </form>
+  <datalist id="acct-types"><option value="Credit Card"><option value="Installment Loan"><option value="Secured"></datalist>
+  <datalist id="balance-accts">{% for o in balance_options %}<option value="{{ o }}">{% endfor %}</datalist>
+</div>
+
+<div class="card">
+  <h2>Activity</h2>
+  <p class="muted">Inquiries, disputes, negative items. Falls-off date is auto-derived
+    (Hard Inquiry 2 yrs, Negative Item 7 yrs).</p>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="lbl">Date</th><th class="lbl">Category</th><th class="lbl">Creditor</th>
+      <th class="lbl">Bureau</th><th class="num">Amount</th><th class="lbl">Status</th>
+      <th class="lbl">Falls off</th><th></th></tr></thead>
+    <tbody>
+      {% for r in activity %}
+      <tr>
+        <td class="lbl">{{ r.date }}</td><td class="lbl">{{ r.category }}</td>
+        <td class="lbl">{{ r.creditor or '—' }}</td><td class="lbl">{{ r.bureau or '—' }}</td>
+        <td class="num">{{ money(r.amount) }}</td><td class="lbl">{{ r.status or '—' }}</td>
+        <td class="lbl muted">{{ r.falls_off or '—' }}</td>
+        <td><button type="button" class="btn-secondary" data-del-activity="{{ r.id }}">Delete</button></td>
+      </tr>
+      {% else %}
+      <tr><td class="muted" colspan="8">No activity logged.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form id="activity-form" class="mt-1 acct-form-grid">
+    <label class="field"><span>Date</span><input name="date" type="date"></label>
+    <label class="field"><span>Category</span>
+      <select name="category">{% for c in falloff_categories %}<option>{{ c }}</option>{% endfor %}</select></label>
+    <label class="field"><span>Creditor / item</span><input name="creditor"></label>
+    <label class="field"><span>Bureau</span><input name="bureau" list="bureaus"></label>
+    <label class="field"><span>Amount</span><input name="amount" type="number" step="0.01"></label>
+    <label class="field"><span>Status</span><input name="status" placeholder="Open / Resolved"></label>
+    <button type="submit" class="btn-primary">Add activity</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Strategy — utilization scenarios</h2>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="lbl">Scenario</th><th class="num">Limit</th><th class="num">Balance</th>
+      <th class="num">Utilization</th><th class="lbl">Impact</th><th class="lbl">Action</th></tr></thead>
+    <tbody>
+      {% for r in strategy.utilization_scenarios %}
+      <tr {{ 'style=background:var(--amber-tint)' if loop.first }}>
+        <td class="lbl">{{ r.label }}</td><td class="num">{{ money(r.limit) }}</td>
+        <td class="num">{{ money(r.balance) }}</td>
+        <td class="num {{ 'neg' if r.util > 0.30 else 'pos' if r.util <= 0.10 else '' }}">{{ pct(r.util) }}</td>
+        <td class="lbl">{{ r.impact }}</td><td class="lbl muted">{{ r.action }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Debt payoff planner <span class="muted">(avalanche — highest APR first)</span></h2>
+  {% if strategy.payoff.rows %}
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="num">#</th><th class="lbl">Account</th><th class="num">Balance</th>
+      <th class="num">APR</th><th class="num">Min</th><th class="num">Mo. interest</th>
+      <th class="num">Months</th><th class="num">Total interest</th><th class="lbl">Strategy</th></tr></thead>
+    <tbody>
+      {% for r in strategy.payoff.rows %}
+      <tr>
+        <td class="num">{{ r.priority }}</td><td class="lbl">{{ r.name }}</td>
+        <td class="num">{{ money(r.balance) }}</td><td class="num">{{ pct(r.apr) }}</td>
+        <td class="num">{{ money(r.min_payment) }}</td><td class="num">{{ money(r.monthly_interest) }}</td>
+        <td class="num">{{ r.months if r.months is not none else '—' }}</td>
+        <td class="num">{{ money(r.total_interest) }}</td><td class="lbl muted">{{ r.strategy }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="subtotal"><td></td><td class="lbl">TOTALS</td>
+        <td class="num">{{ money(strategy.payoff.totals.balance) }}</td><td></td>
+        <td class="num">{{ money(strategy.payoff.totals.min_payment) }}</td>
+        <td class="num">{{ money(strategy.payoff.totals.monthly_interest) }}</td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted">No active accounts with a balance and APR yet.</p>{% endif %}
+</div>
+
+<details class="card">
+  <summary><strong>FICO factors &amp; settings</strong></summary>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="lbl">Factor</th><th class="num">Weight</th><th class="lbl">Target</th><th class="lbl">Status</th><th class="lbl">Action</th></tr></thead>
+    <tbody>
+      {% for f in summary.fico %}
+      <tr><td class="lbl">{{ f.factor }}</td><td class="num">{{ (f.weight*100)|int }}%</td>
+        <td class="lbl">{{ f.target }}</td><td class="lbl">{{ f.status }}</td><td class="lbl muted">{{ f.action }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form id="credit-config" class="mt-1 acct-form-grid">
+    <label class="field"><span>Score target</span>
+      <input name="score_target" type="number" min="300" max="850" value="{{ config.score_target }}"></label>
+    <button type="submit" class="btn-primary">Save</button>
+  </form>
+</details>
+
+<script src="/static/vendor/echarts.min.js"></script>
+<script src="/static/js/chart-theme.js?v={{ css_v('js/chart-theme.js') }}"></script>
+<script nonce="{{ csp_nonce }}">window.CREDIT_SCORES = {{ scores|tojson }};</script>
+<script src="/static/js/credit.js?v={{ css_v('js/credit.js') }}"></script>
+{% endblock %}

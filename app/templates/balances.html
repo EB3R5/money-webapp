@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Balances — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Balances</h1>
+  <span class="muted">{{ "{:,}".format(total) }} balance snapshots</span>
+  <input id="search" type="search" placeholder="Search account, institution, class…" />
+  <span class="grid-toolbar">
+    <button type="button" class="btn-secondary" id="add-row">Add row</button>
+    <button type="button" class="btn-secondary" id="delete-rows" disabled>Delete selected</button>
+  </span>
+</div>
+
+<div id="grid" class="ag-theme-quartz"></div>
+
+<div id="row-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="row-modal-title">
+    <div class="modal-head">
+      <h3 id="row-modal-title">Add balance snapshot</h3>
+      <button type="button" class="modal-close" id="row-close" aria-label="Close">×</button>
+    </div>
+    <form id="row-form" class="acct-form">
+      <div class="acct-form-grid">
+        <label class="field"><span>Date</span><input type="date" name="Date" /></label>
+        <label class="field"><span>Account</span><input type="text" name="Account" /></label>
+        <label class="field"><span>Institution</span><input type="text" name="Institution" /></label>
+        <label class="field"><span>Class</span><input type="text" name="Class" /></label>
+        <label class="field"><span>Account Type</span><input type="text" name="Account Type" /></label>
+        <label class="field"><span>Balance</span><input type="number" step="any" name="Balance" /></label>
+      </div>
+      <div class="modal-actions">
+        <span id="row-status" class="muted"></span>
+        <button type="button" class="btn-secondary" id="row-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">window.BALANCES = { columns: {{ columns | tojson }} };</script>
+<script src="/static/js/grid-factory.js?v={{ css_v('js/grid-factory.js') }}"></script>
+<script src="/static/js/balances.js?v={{ css_v('js/balances.js') }}"></script>
+{% endblock %}

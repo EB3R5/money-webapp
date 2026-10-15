@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Projected P&L — Planning{% endblock %}
+
+{% macro cell(v) -%}
+  {%- if v is none or v == 0 -%}<span class="zero">–</span>{%- else -%}{{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head planning-head">
+  <h1>Projected P&L · {{ x.year_plan.start | month_short }} → {{ x.year_plan.end | month_short }}</h1>
+  {% with w=x.year_plan.window %}{% include "_window_nav.html" %}{% endwith %}
+  <span class="muted">{{ x.labels[x.columns[0]] }} actual · 11 projected · click a planned cell to move it · <span class="estimate">estimated from ledger</span></span>
+  <span class="grid-toolbar">
+    <input type="search" id="plan-search" class="card-search" placeholder="Search items…" value="{{ q }}" autocomplete="off" aria-label="Search items">
+    <span class="legend"><span><i class="sw proj"></i>projected column</span><span><i class="sw planned"></i>planned spend</span></span>
+    <a class="btn-secondary" href="/budgets/pivot">Budget pivot</a>
+    <a class="btn-secondary" href="/pnl">Actual P&L</a>
+    <a class="btn-secondary" href="/planning/year">Year plan</a>
+  </span>
+</div>
+
+<div class="card">
+  <div class="tablewrap"><table class="pivot projected" id="projected">
+    <thead>
+      <tr>
+        <th class="lbl">Line</th>
+        {% for c in x.columns %}<th class="num {{ 'proj' if x.col_kind[c] == 'projected' else 'actual' }}" data-month="{{ c }}">{{ x.labels[c] }}</th>{% endfor %}
+        <th class="num total-col">Year</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in x.table.sections %}
+      <tr class="section"><td class="lbl" colspan="{{ x.columns | length + 2 }}">{{ s.label }}</td></tr>
+      {% for r in s.rows %}
+      <tr{% if r.group %} class="planned-row" data-group="{{ r.group }}" data-search="{{ r.group }} {{ x.year_plan.months | map(attribute='items') | sum(start=[]) | selectattr('group', 'equalto', r.group) | map(attribute='name') | join(' ') }}"{% endif %}>
+        <td class="lbl">{{ r.label }}</td>
+        {% for c in x.columns %}
+          {% set v = r.by_col.get(c) %}
+          {% if r.group and v %}<td class="num cell planned" data-month="{{ c }}" data-group="{{ r.group }}" title="move {{ r.group }} from {{ x.labels[c] }}">{{ cell(v) }}</td>
+          {% else %}<td class="num {{ 'planned' if r.group }}">{{ cell(v) }}</td>{% endif %}
+        {% endfor %}
+        <td class="num total-col">{{ cell(r.total) }}</td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="grand net">
+        <td class="lbl">Net after savings</td>
+        {% for c in x.columns %}<td class="num {{ 'flag' if c in x.flags }}" data-month="{{ c }}">{{ "{:+,.0f}".format(x.net.by_col[c]) | replace('-', '−') }}</td>{% endfor %}
+        <td class="num total-col">{{ "{:+,.0f}".format(x.net.total) | replace('-', '−') }}</td>
+      </tr>
+    </tfoot>
+  </table></div>
+  <div class="b-move" id="b-move" hidden>
+    <span id="b-move-label"></span>
+    <select id="b-move-to"></select>
+    <button type="button" class="btn-secondary" id="b-move-go">Move</button>
+    <button type="button" class="btn-secondary" id="b-move-cancel">Cancel</button>
+    <span class="muted" id="b-move-status"></span>
+  </div>
+  <p class="muted">Projected columns: income from Income sources, bills from the detected series, variable spend from the trailing 90 days, planned spend from the Year plan (typed here and pulled from future-purchases), the savings contribution as the target rate × expected income. The P&L page ends at the current month; this is the same table continued.</p>
+</div>
+
+<p class="muted" id="plan-no-match" hidden>No items match.</p>
+<script type="application/json" id="plan-data" nonce="{{ csp_nonce }}">{{ x.year_plan | tojson }}</script>
+<script src="/static/js/search.js?v={{ css_v('js/search.js') }}"></script>
+<script src="/static/js/planning-search.js?v={{ css_v('js/planning-search.js') }}"></script>
+<script src="/static/js/planning-projected.js?v={{ css_v('js/planning-projected.js') }}"></script>
+{% endblock %}

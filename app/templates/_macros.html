@@ -1,0 +1,9 @@
+{# Shared template macros. #}
+
+{# A "⬇ PNG" button that downloads `target` (a CSS selector) as a PNG named `name`.
+   Pulls in the html-to-image CDN lib + the report-png.js wiring once per use. #}
+{% macro png_button(target, name) %}
+<button type="button" class="btn-secondary" data-png-target="{{ target }}" data-png-name="{{ name }}">⬇ PNG</button>
+<script src="/static/vendor/html-to-image.min.js"></script>
+<script src="/static/js/report-png.js?v={{ css_v('js/report-png.js') }}"></script>
+{% endmacro %}

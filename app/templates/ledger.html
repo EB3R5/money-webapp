@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Ledger — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Ledger</h1>
+  <span class="muted">{{ "{:,}".format(total) }} transactions</span>
+  <input id="search" type="search" placeholder="Search description, category, account…" />
+  <span class="grid-toolbar">
+    <span class="toolbar-group">
+      <button type="button" class="btn-secondary" id="add-row">Add row</button>
+      <button type="button" class="btn-secondary" id="delete-rows" disabled>Delete selected</button>
+    </span>
+    <span class="toolbar-group">
+      <button type="button" class="btn-secondary" id="apply-rules-btn" title="Write each matching Rule's Category onto the uncategorized transactions">Apply rules</button>
+      <button type="button" class="btn-secondary" id="ml-suggest-btn"{% if not ml_ready %} disabled{% endif %} title="{% if ml_ready %}Store the ML model's top pick as a suggestion on the uncategorized transactions{% else %}No model yet — retrain on the Categorization page once ten transactions are categorized{% endif %}">ML suggest</button>
+      <a class="btn-secondary" href="/categorization" title="Edit the Rules and the ML model">Manage rules</a>
+    </span>
+    <span id="cat-status" class="muted"></span>
+  </span>
+</div>
+
+<div class="ledger-body">
+  <div id="grid" class="ag-theme-quartz"></div>
+
+  <aside id="suggest-panel" class="suggest-panel" hidden>
+    <div class="suggest-head">
+      <strong>Suggestions</strong>
+      <button type="button" class="modal-close" id="suggest-close" aria-label="Close">×</button>
+    </div>
+    <div class="suggest-txn">
+      <div id="suggest-desc" class="suggest-desc muted"></div>
+      <div id="suggest-amount" class="suggest-amount"></div>
+    </div>
+    <div class="suggest-section">
+      <div class="suggest-label muted">Rule</div>
+      <div id="suggest-rule" class="suggest-list"></div>
+    </div>
+    <div class="suggest-section">
+      <div class="suggest-label muted">ML model</div>
+      <div id="suggest-ml" class="suggest-list"></div>
+    </div>
+  </aside>
+</div>
+
+<div id="row-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="row-modal-title">
+    <div class="modal-head">
+      <h3 id="row-modal-title">Add transaction</h3>
+      <button type="button" class="modal-close" id="row-close" aria-label="Close">×</button>
+    </div>
+    <form id="row-form" class="acct-form">
+      <div class="acct-form-grid">
+        <label class="field"><span>Date</span><input type="date" name="Date" /></label>
+        <label class="field"><span>Description</span><input type="text" name="Description" /></label>
+        <label class="field"><span>Category</span><input type="text" name="Category" list="row-cat-options" /></label>
+        <label class="field"><span>Amount</span><input type="number" step="any" name="Amount" /></label>
+        <label class="field"><span>Account</span><input type="text" name="Account" /></label>
+        <label class="field"><span>Institution</span><input type="text" name="Institution" /></label>
+      </div>
+      <div class="modal-actions">
+        <span id="row-status" class="muted"></span>
+        <button type="button" class="btn-secondary" id="row-cancel">Cancel</button>
+        <button type="submit" class="btn-primary">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style nonce="{{ csp_nonce }}">
+  .ledger-body { display: flex; gap: 12px; align-items: stretch; }
+  .ledger-body #grid { flex: 1; min-width: 0; }
+  .suggest-panel { width: 280px; flex: 0 0 280px; border: 1px solid var(--border, var(--rule));
+    border-radius: var(--radius); padding: 12px; background: var(--panel-bg, #fff); overflow: auto; }
+  .suggest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .suggest-desc { font-size: 0.85rem; word-break: break-word; }
+  .suggest-amount { font-variant-numeric: tabular-nums; margin: 4px 0 10px; }
+  .suggest-list { display: flex; flex-direction: column; gap: 6px; }
+  .suggest-section { margin-top: 10px; }
+  .suggest-label { font-size: 0.75rem; text-transform: none; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .pred-chip.pred-rule { border-color: var(--bank-green); background: var(--bank-green-tint); color: var(--bank-green); }
+  .pred-chip.pred-rule:hover { background: var(--bank-green-tint); }
+  .pred-chip { display: block; width: 100%; text-align: left; cursor: pointer; border: 1px solid var(--border, var(--rule));
+    border-radius: var(--radius); padding: 6px 8px; background: var(--paper); }
+  .pred-chip:hover { background: var(--rule-soft); }
+  .pred-chip .pred-cat { display: flex; justify-content: space-between; font-size: 0.9rem; }
+  .pred-bar { height: 4px; border-radius: 2px; background: var(--bank-green); margin-top: 4px; }
+</style>
+<script nonce="{{ csp_nonce }}">window.LEDGER = { columns: {{ columns | tojson }}, categories: {{ categories | tojson }}, mlReady: {{ ml_ready | tojson }} };</script>
+<script src="/static/js/grid-factory.js?v={{ css_v('js/grid-factory.js') }}"></script>
+<script src="/static/js/ledger.js?v={{ css_v('js/ledger.js') }}"></script>
+{% endblock %}

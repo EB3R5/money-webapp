@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ sheet.title }} — Inventory — Money{% endblock %}
+
+{% block content %}
+<div class="page-head sheet-tools">
+  <a class="btn-secondary" href="/inventory">← Back to inventory</a>
+  <span class="muted" id="sheet-status"></span>
+  <button type="button" class="ml-auto btn-primary" id="sheet-export">⬇ Export bundle</button>
+</div>
+
+{# The element the PNG captures. Everything a buyer / insurer needs, nothing they don't. #}
+<article class="item-sheet" id="item-sheet">
+  <header class="item-sheet-head">
+    <div class="item-sheet-hero">
+      {% if sheet.hero %}<img src="{{ sheet.hero }}" alt="{{ sheet.title }}" />
+      {% else %}<div class="item-sheet-nophoto">No photo</div>{% endif %}
+    </div>
+    <div class="item-sheet-title">
+      <h1>{{ sheet.title }}</h1>
+      {% if sheet.brand or sheet.model %}
+      <p class="item-sheet-sub">{{ [sheet.brand, sheet.model] | select | join(' · ') }}</p>
+      {% endif %}
+      <p class="item-sheet-value">${{ "{:,.2f}".format(sheet.value) }}</p>
+      {% if sheet.thumbs %}
+      <div class="item-sheet-thumbs">
+        {% for t in sheet.thumbs %}<img src="{{ t }}" alt="" />{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if sheet.rows or sheet.kits %}
+  <dl class="item-sheet-spec">
+    {% for label, v in sheet.rows %}
+    <dt>{{ label }}</dt>
+    <dd>{% if label == 'Link' and v.startswith('http') %}<a href="{{ v }}" target="_blank" rel="noopener">{{ v }}</a>{% else %}{{ v }}{% endif %}</dd>
+    {% endfor %}
+    {% if sheet.kits %}
+    <dt>Kits</dt>
+    <dd class="item-sheet-kits">{% for k in sheet.kits %}<a href="/kits/{{ k.id }}">{{ k.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</dd>
+    {% endif %}
+  </dl>
+  {% endif %}
+
+  {% if sheet.notes %}
+  <section class="item-sheet-notes">
+    <h2>Notes</h2>
+    <p>{{ sheet.notes }}</p>
+  </section>
+  {% endif %}
+</article>
+
+<script nonce="{{ csp_nonce }}">window.SHEET = { docId: {{ doc_id | tojson }}, title: {{ sheet.title | tojson }} };</script>
+<script src="/static/vendor/html-to-image.min.js"></script>
+<script src="/static/js/inventory-sheet.js?v={{ css_v('js/inventory-sheet.js') }}"></script>
+{% endblock %}

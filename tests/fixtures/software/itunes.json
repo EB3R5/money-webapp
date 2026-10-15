@@ -1,0 +1,21 @@
+{
+  "resultCount": 1,
+  "results": [
+    {
+      "trackId": 904280696,
+      "trackName": "Things 3",
+      "sellerName": "Cultured Code GmbH & Co. KG",
+      "bundleId": "com.culturedcode.ThingsMac",
+      "price": 49.99,
+      "currency": "USD",
+      "formattedPrice": "$49.99",
+      "version": "3.24.1",
+      "primaryGenreName": "Productivity",
+      "kind": "mac-software",
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/71/2a/0e/712a0eb9-f559-73e3-4807-a4bdfa7cae0d/AppIcon-0-0-85-220-0-0-6-0-2x.png/512x512bb.png",
+      "trackViewUrl": "https://apps.apple.com/us/app/things-3/id904280696?mt=12&uo=4",
+      "description": "Get things done! The award-winning Things app helps you plan your day, manage your projects, and make real progress towa",
+      "minimumOsVersion": "13.3"
+    }
+  ]
+}

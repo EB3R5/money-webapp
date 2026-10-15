@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Category Insights — Money{% endblock %}
+
+{% from "_macros.html" import png_button %}
+{% block content %}
+<div class="page-head">
+  <h1>Category Insights</h1>
+  <span class="muted">Cashflow deep-dive — sum of amount, biggest outflows first.</span>
+  <span class="ml-auto">{{ png_button('.ci-panels', 'category-insights.png') }}</span>
+</div>
+
+<div class="ci-filters">
+  <label class="ci-field"><span>From</span>
+    <input type="date" id="ci-start" value="{{ min_date }}" min="{{ min_date }}" max="{{ max_date }}" /></label>
+  <label class="ci-field"><span>To</span>
+    <input type="date" id="ci-end" value="{{ max_date }}" min="{{ min_date }}" max="{{ max_date }}" /></label>
+  <label class="ci-field"><span>Group</span>
+    <select id="ci-group">
+      <option value="">All groups</option>
+      <option value="{{ none_label }}">{{ none_label }}</option>
+      {% for g in groups %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+    </select></label>
+  <label class="ci-field"><span>Category</span>
+    <select id="ci-category">
+      <option value="">All categories</option>
+      <option value="{{ none_label }}">{{ none_label }}</option>
+      {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select></label>
+  <label class="ci-field ci-search"><span>Search description</span>
+    <input type="search" id="ci-q" placeholder="e.g. amazon" /></label>
+  <button type="button" class="btn-secondary" id="ci-reset">Reset</button>
+  <span class="ci-grand" id="ci-grand"></span>
+</div>
+
+<div class="ci-panels">
+  <section class="ci-panel">
+    <div class="ci-panel-head"><h3>By Group</h3><span class="muted" id="ci-group-count"></span></div>
+    <div class="ci-rows" id="ci-groups"></div>
+  </section>
+  <section class="ci-panel">
+    <div class="ci-panel-head"><h3>By Category</h3><span class="muted" id="ci-cat-count"></span></div>
+    <div class="ci-rows" id="ci-cats"></div>
+  </section>
+  <section class="ci-panel ci-panel-wide">
+    <div class="ci-panel-head"><h3>Transactions</h3><span class="muted" id="ci-txn-count"></span></div>
+    <div class="ci-rows ci-txns" id="ci-txns"></div>
+  </section>
+</div>
+
+<style nonce="{{ csp_nonce }}">
+  .ci-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 14px; }
+  .ci-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--graphite); }
+  .ci-field input, .ci-field select { font-size: 13px; padding: 5px 7px; border: 1px solid var(--rule); border-radius: var(--radius); }
+  .ci-search input { min-width: 200px; }
+  .ci-grand { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; }
+  .ci-panels { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; align-items: start; }
+  .ci-panel { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; background: #fff; }
+  .ci-panel-head { display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 12px; border-bottom: 1px solid var(--rule-soft); background: var(--paper); }
+  .ci-panel-head h3 { margin: 0; font-size: 14px; }
+  .ci-rows { max-height: calc(100vh - 230px); overflow: auto; }
+  .ci-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 12px;
+    border-bottom: 1px solid var(--rule-soft); cursor: pointer; font-size: 13px; }
+  .ci-row:hover { background: var(--paper); }
+  .ci-row.active { background: var(--rule-blue-tint); }
+  .ci-row .ci-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ci-row .ci-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ci-amt.neg { color: var(--red-ink); } .ci-amt.pos { color: var(--bank-green); }
+  .ci-txns .ci-row { cursor: default; }
+  .ci-txn-meta { display: flex; flex-direction: column; min-width: 0; }
+  .ci-txn-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ci-txn-sub { font-size: 11px; color: var(--graphite); }
+  .ci-empty { padding: 16px 12px; color: var(--graphite); font-size: 13px; }
+</style>
+<script src="/static/js/category-insights.js?v={{ css_v('js/category-insights.js') }}"></script>
+{% endblock %}

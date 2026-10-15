@@ -1,0 +1,36 @@
+# Secrets — never commit
+.env
+*.env
+.secrets/
+*-sa.json
+*service-account*.json
+*credentials*.json
+
+# App data directory (DATA_DIR): SQLite file, photos, models — never commit
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Migration artifacts
+migration/manifest.json
+
+# collectstatic output (the image builds it; whitenoise serves it)
+staticfiles/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# graphify generated knowledge graph (regenerable via `graphify update .`)
+graphify-out/
+
+# macOS junk
+.DS_Store
+._*
+
+# setuptools editable-install metadata
+*.egg-info/
+build/

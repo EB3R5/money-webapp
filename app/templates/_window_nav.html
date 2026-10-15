@@ -1,0 +1,6 @@
+{# Window nav (#184): move the twelve-month window a month at a time, or back to today. #}
+<span class="window-nav">
+  <a class="nav-month" href="?start={{ w.earlier }}" title="one month earlier">←</a>
+  {% if w.moved %}<a class="nav-month" href="{{ request.path }}">today</a>{% endif %}
+  <a class="nav-month" href="?start={{ w.later }}" title="one month later">→</a>
+</span>

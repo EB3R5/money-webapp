@@ -1,0 +1,46 @@
+# Reference compose file (docs/deployment.md): the web service and the jobs process from one
+# image, published on loopback only. `docker compose up -d --build` is the one-command run.
+#
+# Before the first `up`: copy .env.example to .env and set SESSION_SECRET (the app refuses to
+# start without it). The first start creates the data directory and applies the schema and
+# the migrations; the first visit to /login is then a setup form for the admin's username and
+# password — or set DEFAULT_USER / DEFAULT_PASSWORD in .env to seed that admin headlessly
+# (a change is forced at the first sign-in).
+#
+# A larger stack defines its own services and does not include this file. The image runs as root, so ./data ends up root-owned 0700 (docs/SECURITY.md).
+services:
+  money-next:
+    build:
+      context: .
+      dockerfile: packaging/docker/Dockerfile
+    container_name: money-next
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Host paths in .env mean nothing inside the container; the directory is bind-mounted below.
+      # The SimpleFIN feed turns on by setting SIMPLEFIN_ACCESS_URL in .env.
+      DATA_DIR: /app/data
+    volumes:
+      - "./data:/app/data"
+    ports:
+      - "127.0.0.1:8012:8000"
+
+  # The scheduler (the feed's runs, the session clean-up): the same image and data directory,
+  # started once the web service is healthy so only one process applies the schema.
+  money-next-jobs:
+    build:
+      context: .
+      dockerfile: packaging/docker/Dockerfile
+    container_name: money-next-jobs
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /app/data
+    volumes:
+      - "./data:/app/data"
+    command: ["python", "manage.py", "run_jobs"]
+    healthcheck:
+      disable: true
+    depends_on:
+      money-next:
+        condition: service_healthy

@@ -1,0 +1,9 @@
+{# The import strip (ADR-0017): post one host's "what is installed" run — the JSON a
+   software exporter wrote — to /api/software/import from the browser (CSRF covers every
+   POST, so a script cannot curl it). software.js reads the file and posts it. #}
+<section class="import-strip" id="sw-import">
+  <span class="muted">Import a run:</span>
+  <input type="file" id="sw-import-file" accept=".json,application/json" aria-label="Exported run (JSON)" />
+  <button type="button" class="btn-secondary" id="sw-import-btn">📥 Import run</button>
+  <span class="muted" id="sw-import-status" aria-live="polite"></span>
+</section>

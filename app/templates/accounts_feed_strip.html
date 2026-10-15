@@ -1,0 +1,45 @@
+{# Unlinked feed accounts (app/simplefin/link.py): one row each with Link / Promote / Ignore,
+   and a fold-out of the ignored ones. Rendered only when there is something to decide. #}
+{% if banner.unlinked %}
+<section class="feed-strip" id="feed-strip">
+  <div class="acct-section-head">
+    <h2>Unlinked feed accounts</h2>
+    <span class="muted">{{ banner.unlinked|length }} from the bank feed, not yet a card</span>
+  </div>
+  <ul class="feed-list">
+    {% for f in banner.unlinked %}
+    <li class="feed-row" data-feed-id="{{ f._id }}">
+      <span class="feed-name"><strong>{{ f.Account }}</strong>{% if f.Institution %} <span class="muted">· {{ f.Institution }}</span>{% endif %}</span>
+      <span class="feed-amount {{ 'neg' if (f.Amount or 0) < 0 }}">{{ money(f.Amount) }}</span>
+      <span class="feed-actions">
+        <select class="feed-card" aria-label="Link to card">
+          <option value="">Link to…</option>
+          {% for c in banner.cards %}<option value="{{ c._id }}">{{ c.Account }}{% if c.Type %} ({{ c.Type }}){% endif %}</option>{% endfor %}
+        </select>
+        <button type="button" class="btn-secondary feed-link">Link</button>
+        <select class="feed-kind" aria-label="Promote as">
+          <option value="">Promote as…</option>
+          {% for k in banner.kinds %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
+        </select>
+        <button type="button" class="btn-secondary feed-promote">Promote</button>
+        <button type="button" class="btn-secondary feed-ignore">Ignore</button>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  <span class="muted feed-status" id="feed-status"></span>
+</section>
+{% endif %}
+{% if banner.ignored %}
+<details class="feed-ignored" id="feed-ignored">
+  <summary class="muted">Ignored feed accounts ({{ banner.ignored|length }})</summary>
+  <ul class="feed-list">
+    {% for f in banner.ignored %}
+    <li class="feed-row" data-feed-id="{{ f._id }}">
+      <span class="feed-name">{{ f.Account }}{% if f.Institution %} <span class="muted">· {{ f.Institution }}</span>{% endif %}</span>
+      <span class="feed-actions"><button type="button" class="btn-secondary feed-unignore">Un-ignore</button></span>
+    </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}App Activity — Money{% endblock %}
+
+{% macro ts(dt) -%}
+  {%- if dt -%}{{ dt.strftime("%Y-%m-%d %H:%M") }}{%- else -%}<span class="muted">never</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro day(dt) -%}
+  {%- if dt -%}{{ dt.strftime("%Y-%m-%d") }}{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>App Activity</h1>
+  <span class="muted">Snapshot generated {{ ts(h.generated_at) }}</span>
+</div>
+
+<div class="health-cards">
+  <div class="card stat">
+    <span class="muted">Reports current through</span>
+    <strong>{{ day(h.reports_current_through) }}</strong>
+  </div>
+  <div class="card stat">
+    <span class="muted">Transactions needing categorization</span>
+    <strong class="{{ 'neg' if h.needs_categorization else 'pos' }}">{{ "{:,}".format(h.needs_categorization) }}</strong>
+  </div>
+</div>
+
+<h2 class="health-h2">Sections</h2>
+<table class="pivot">
+  <thead>
+    <tr><th class="lbl">Section</th><th class="num">Records</th><th class="num">Last updated</th><th class="num">Current through</th></tr>
+  </thead>
+  <tbody>
+    {% for s in h.sections %}
+    <tr>
+      <td class="lbl">{{ s.label }}</td>
+      <td class="num">{{ "{:,}".format(s.count) }}</td>
+      <td class="num">{{ ts(s.last_updated) }}</td>
+      <td class="num">{{ day(s.current_through) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="health-h2">SimpleFIN feed <a class="muted" href="/settings/feed">settings</a></h2>
+{% set sf = h.simplefin %}
+<div class="sf-head">
+  {% if not sf.configured %}
+    <span class="muted">Not configured — <a href="/settings/feed">Settings → Feed</a> says how to enable it.</span>
+  {% else %}
+    <span class="muted">Cursor {{ ts(sf.cursor.window_end) if sf.cursor else 'none' }} ·
+      last success {{ ts(sf.cursor.last_success_at) if sf.cursor else 'never' }} ·
+      requests today {{ sf.requests_used_today }}/{{ sf.budget }}
+      {% if sf.running %} · <strong>running</strong>{% endif %}</span>
+    <form method="post" action="/sync/simplefin?next=/activity" class="sf-form">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+      <button type="submit" class="btn-secondary" id="sf-sync-now" {% if sf.running %}disabled{% endif %}>🔄 Sync now</button>
+      {% if sync_result %}<span class="muted">last request: <strong>{{ sync_result }}</strong></span>{% endif %}
+    </form>
+  {% endif %}
+</div>
+
+{% if latest_errlist %}
+<p class="sf-warnings"><strong>Latest provider warnings</strong></p>
+<ul class="sf-warnings">
+  {% for e in latest_errlist %}
+  <li><code>{{ e.code }}</code> {{ e.msg }}{% if e.conn_id %} <span class="muted">(connection {{ e.conn_id }})</span>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if runs %}
+<table class="pivot sf-runs">
+  <thead>
+    <tr><th class="lbl">Started</th><th class="lbl">Feed</th><th class="lbl">Trigger</th><th class="lbl">Status</th>
+        <th class="num">Chunks</th><th class="num">Requests</th><th class="num">New</th><th class="num">Updated</th>
+        <th class="num">Pending ±</th><th class="num">Snapshots</th>
+        <th class="num">Rules</th><th class="num">ML</th><th class="lbl">Error</th></tr>
+  </thead>
+  <tbody>
+    {% for r in runs %}
+    <tr>
+      <td class="lbl">{{ ts(r.started_at) }}</td>
+      <td class="lbl">{{ r.feed or 'simplefin' }}</td>
+      <td class="lbl">{{ r.trigger }}</td>
+      <td class="lbl"><span class="pill pill-{{ r.status }}">{{ r.status }}</span></td>
+      <td class="num">{{ r.chunks or 0 }}</td>
+      <td class="num">{{ r.requests_used or 0 }}</td>
+      <td class="num">{{ r.txns_new or 0 }}</td>
+      <td class="num">{{ r.txns_updated or 0 }}</td>
+      <td class="num">{{ r.txns_pending_replaced or 0 }} / {{ r.txns_pending_dropped or 0 }}</td>
+      <td class="num">{{ r.snapshots_added or 0 }}</td>
+      <td class="num">{{ r.rules_applied or 0 }}</td>
+      <td class="num">{{ r.ml_suggested or 0 }}</td>
+      <td class="lbl">{% if r.error %}<span class="neg">{{ r.error }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% elif sf.configured %}
+<p class="muted">No feed run yet.</p>
+{% endif %}
+
+<h2 class="health-h2">future-purchases</h2>
+<div class="sf-head">
+  {% if not fp_configured %}
+    <span class="muted">Not configured — set <code>FUTURE_PURCHASES_URL</code> to pull planned spend on demand (ADR-0023).</span>
+  {% else %}
+    <span class="muted">Pulled on demand, never scheduled{% if fp_last %} · last pull {{ ts(fp_last.started_at) }} ({{ fp_last.status }}, {{ fp_last.txns_new or 0 }} new, {{ fp_last.txns_updated or 0 }} updated){% else %} · never pulled{% endif %}</span>
+    <form method="post" action="/api/planning/sync/future-purchases?next=/activity" class="sf-form">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+      <button type="submit" class="btn-secondary" id="fp-pull-now">⬇ Pull future-purchases</button>
+      {% if request.GET.get('sync') %}<span class="muted">last request: <strong>{{ request.GET.get('sync') }}</strong></span>{% endif %}
+    </form>
+  {% endif %}
+</div>
+
+<p class="muted health-api">Machine-readable status for other apps: <code>GET /api/health</code>, feed status <code>GET /sync/simplefin/status</code></p>
+
+<style nonce="{{ csp_nonce }}">
+  .health-cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+  .health-cards .card.stat { min-width: 200px; }
+  .health-cards strong { font-size: 18px; }
+  .health-h2 { margin: 20px 0 8px; font-size: 15px; }
+  .health-api { margin-top: 16px; }
+  .sf-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 8px; }
+  .sf-form { display: inline-flex; gap: 8px; align-items: center; margin: 0; }
+  ul.sf-warnings { margin: 4px 0 10px 18px; font-size: 13px; }
+  p.sf-warnings { margin: 6px 0 0; font-size: 13px; }
+  .sf-runs td.lbl .pill { font-size: 11px; }
+  .pill-ok { background: var(--bank-green-tint); color: var(--bank-green); } .pill-partial { background: var(--amber-tint); color: var(--amber); }
+  .pill-failed, .pill-skipped_budget { background: var(--red-ink-tint); color: var(--red-ink); } .pill-running { background: var(--rule-blue-tint); color: var(--rule-blue); }
+</style>
+{% endblock %}

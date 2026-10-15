@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Income sources — Planning{% endblock %}
+
+{% block content %}
+<div class="page-head planning-head">
+  <h1>Income sources</h1>
+  <span class="muted">What you expect to earn and when · typed here, matched to the ledger by category</span>
+  <span class="grid-toolbar">
+    <input type="search" id="plan-search" class="card-search" placeholder="Search items…" value="{{ q }}" autocomplete="off" aria-label="Search items">
+    <a class="btn-secondary" href="/planning/planner">Planner</a>
+    <a class="btn-secondary" href="/planning/month">This month</a>
+  </span>
+</div>
+
+<div class="planning-cols income-cols">
+  <div class="planning-main">
+    <div class="card" id="sources">
+      <h2>Sources · {{ sources | selectattr('active') | list | length }} active</h2>
+      {% if sources %}
+      <div class="tablewrap scroll-list"><table class="t">
+        <thead><tr><th>Name</th><th>Category</th><th>Cadence</th><th class="r">Amount</th><th class="r">Per month</th><th>Next</th><th></th><th></th></tr></thead>
+        <tbody>
+        {% for s in sources %}
+        <tr data-source-id="{{ s.id }}" class="{{ '' if s.active else 'inactive' }}" data-search="{{ s.label }} {{ s.category or '' }} {{ s.cadence }} {{ s.notes or '' }}">
+          <td>{{ s.label }}{% if not s.active %} <span class="pill none">inactive</span>{% endif %}</td>
+          <td class="muted">{{ s.category or '—' }}</td>
+          <td class="muted">{{ s.cadence }}</td>
+          <td class="r">{{ s.amount | money }}</td>
+          <td class="r">{{ s.per_month | money if s.per_month is not none else '—' }}</td>
+          <td class="muted">{{ s.next_date or '—' }}</td>
+          <td><button type="button" class="linkish" data-edit="{{ s.id }}"
+                data-name="{{ s.label }}" data-category="{{ s.category or '' }}" data-cadence="{{ s.cadence }}"
+                data-amount="{{ s.amount }}" data-anchor="{{ s.anchor_date or '' }}" data-notes="{{ s.notes or '' }}"
+                data-active="{{ 1 if s.active else 0 }}">Edit</button></td>
+          <td><button type="button" class="linkish" data-toggle="{{ s.id }}" data-active="{{ 1 if s.active else 0 }}">{{ 'Deactivate' if s.active else 'Activate' }}</button>
+              · <button type="button" class="linkish danger" data-del="{{ s.id }}">Delete</button></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% else %}
+      <p class="muted">No income sources yet. Add one below, or pick a detected series on the right.</p>
+      {% endif %}
+    </div>
+
+    <div class="card" id="source-form-card">
+      <h2 id="form-title">Add a source</h2>
+      <form id="source-form" class="acct-form-grid">
+        <input type="hidden" name="id" id="src-id" value="">
+        <label class="field"><span>Name</span><input name="name" id="src-name" required placeholder="Paycheck"></label>
+        <label class="field"><span>Income category</span>
+          <select name="category" id="src-category"><option value="">— none —</option>
+            {% for c in income_categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></label>
+        <label class="field"><span>Cadence</span>
+          <select name="cadence" id="src-cadence">{% for c in cadences %}<option value="{{ c }}"{% if c == "monthly" %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+        <label class="field"><span>Amount per occurrence</span><input name="amount" id="src-amount" type="number" step="0.01" min="0" required placeholder="3420"></label>
+        <label class="field"><span>Next expected date</span><input name="anchor_date" id="src-anchor" type="date"></label>
+        <label class="field"><span>Notes</span><input name="notes" id="src-notes" placeholder="optional"></label>
+        <div class="modal-actions"><span class="muted" id="src-status"></span>
+          <button type="button" class="btn-secondary" id="src-cancel" hidden>Cancel</button>
+          <button type="submit" class="btn-primary" id="src-submit">Add source</button></div>
+      </form>
+      <p class="muted">Semimonthly pays on the next date's day and the day fifteen later each month. Received is always the category's actual income.</p>
+    </div>
+  </div>
+
+  <div class="c-side">
+    <div class="card" id="detected">
+      <h2>Detected in the ledger · <span class="estimate">estimated</span></h2>
+      {% if detected %}
+      <div class="tablewrap"><table class="t">
+        <thead><tr><th>Category</th><th>Cadence</th><th class="r">Amount</th><th></th></tr></thead>
+        <tbody>
+        {% for d in detected %}
+        <tr data-detected="{{ d.category }}" data-search="{{ d.label }} {{ d.category or '' }} {{ d.cadence }}">
+          <td>{{ d.label }}</td><td class="muted">{{ d.cadence }}</td><td class="r">{{ d.amount | money }}</td>
+          <td><button type="button" class="chip" data-use data-name="{{ d.label }}" data-category="{{ d.category }}"
+                data-cadence="{{ d.cadence if d.cadence in cadences else 'irregular' }}" data-amount="{{ d.amount }}"
+                data-anchor="{{ d.next_date or '' }}">Use this</button></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      <p class="muted">Series the detector finds in Income categories no source claims. "Use this" prefills the form; the row stays detected until you add it.</p>
+      {% else %}
+      <p class="muted">Nothing periodic detected in Income categories that a source does not already claim.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<p class="muted" id="plan-no-match" hidden>No items match.</p>
+<script src="/static/js/search.js?v={{ css_v('js/search.js') }}"></script>
+<script src="/static/js/planning-search.js?v={{ css_v('js/planning-search.js') }}"></script>
+<script src="/static/js/planning-income.js?v={{ css_v('js/planning-income.js') }}"></script>
+{% endblock %}

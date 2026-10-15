@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Tax — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none -%}<span class="zero">–</span>
+  {%- elif v == 0 -%}<span class="zero">0</span>
+  {%- elif v < 0 -%}<span class="neg">({{ "{:,.0f}".format(-v) }})</span>
+  {%- else -%}{{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro pct(v) -%}{% if v is none %}—{% else %}{{ "{:.1f}%".format(v * 100) }}{% endif %}{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Tax</h1>
+  <span class="muted">{{ config.filing_status }} · state at {{ '%.2f' % (config.state_rate * 100) }}%</span>
+  <form method="get" class="year-picker">
+    <select name="year">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+{% set c = calc %}
+<div class="summary-cards">
+  <div class="card stat"><span class="k">Gross income</span><span class="v pos">{{ money(c.gross_income) }}</span></div>
+  <div class="card stat"><span class="k">Taxable income</span><span class="v">{{ money(c.taxable_income) }}</span></div>
+  <div class="card stat"><span class="k">Total liability</span><span class="v neg">{{ money(c.total_liability) }}</span></div>
+  <div class="card stat"><span class="k">{{ 'Refund' if c.refund_owe >= 0 else 'Owe' }}</span>
+    <span class="v {{ 'pos' if c.refund_owe >= 0 else 'neg' }}">{{ money(c.refund_owe if c.refund_owe >= 0 else -c.refund_owe) }}</span></div>
+  <div class="card stat"><span class="k">Marginal / effective</span><span class="fs-1 v">{{ pct(c.marginal_rate) }} / {{ pct(c.effective_rate) }}</span></div>
+</div>
+
+<div class="card">
+  <h2>Tax calculation — {{ year }}</h2>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <tbody>
+      <tr><td class="lbl">Gross income</td><td class="num">{{ money(c.gross_income) }}</td></tr>
+      <tr><td class="lbl">Above-the-line (401k/HSA/IRA/student loan)</td><td class="num">({{ "{:,.0f}".format(c.above_the_line) }})</td></tr>
+      <tr><td class="lbl"><strong>AGI</strong></td><td class="num"><strong>{{ money(c.agi) }}</strong></td></tr>
+      <tr><td class="lbl">Standard deduction</td><td class="num">{{ money(c.std_deduction) }}</td></tr>
+      <tr><td class="lbl">Itemized total</td><td class="num">{{ money(c.itemized_total) }}</td></tr>
+      <tr><td class="lbl">Deduction used</td><td class="num">({{ "{:,.0f}".format(c.deduction_used) }})</td></tr>
+      <tr class="subtotal"><td class="lbl"><strong>Taxable income</strong></td><td class="num"><strong>{{ money(c.taxable_income) }}</strong></td></tr>
+      <tr><td class="lbl">Federal tax</td><td class="num">{{ money(c.federal_tax) }}</td></tr>
+      {% if c.se_tax %}<tr><td class="lbl">Self-employment tax</td><td class="num">{{ money(c.se_tax) }}</td></tr>{% endif %}
+      <tr><td class="lbl">State tax (effective {{ '%.2f' % (c.state_rate * 100) }}%)</td><td class="num">{{ money(c.state_tax) }}</td></tr>
+      <tr class="subtotal"><td class="lbl"><strong>Total liability</strong></td><td class="num neg"><strong>{{ money(c.total_liability) }}</strong></td></tr>
+      <tr><td class="lbl">Payments (withholding + estimated)</td><td class="num">{{ money(c.total_payments) }}</td></tr>
+      <tr class="subtotal"><td class="lbl"><strong>{{ 'Refund' if c.refund_owe >= 0 else 'Balance owed' }}</strong></td>
+        <td class="num {{ 'pos' if c.refund_owe >= 0 else 'neg' }}"><strong>{{ money(c.refund_owe if c.refund_owe >= 0 else -c.refund_owe) }}</strong></td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Quarterly estimates <span class="muted">(safe harbor vs {{ quarterly.prior_year }} liability {{ money(quarterly.prior_liability) }})</span></h2>
+  <p class="muted">Recommended per quarter: <strong>${{ "{:,.0f}".format(quarterly.recommended_per_q) }}</strong>
+    {% if not quarterly.prior_liability %}(no prior-year history — using 90% of current){% endif %}</p>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="lbl">Quarter</th><th class="lbl">Period</th><th class="lbl">Due</th>
+      <th class="num">Needed YTD</th><th class="num">Paid YTD</th><th class="num">Amount due</th><th class="lbl">Status</th></tr></thead>
+    <tbody>
+      {% for q in quarterly.quarters %}
+      <tr><td class="lbl">{{ q.quarter }}</td><td class="lbl muted">{{ q.period }}</td><td class="lbl">{{ q.due }}</td>
+        <td class="num">{{ money(q.needed_ytd) }}</td><td class="num">{{ money(q.payments_ytd) }}</td>
+        <td class="num {{ 'neg' if q.amount_due else 'pos' }}">{{ money(q.amount_due) }}</td><td class="lbl">{{ q.status }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="chart-grid">
+  <div class="card">
+    <h2>Income <span class="muted">({{ income|length }} categories)</span></h2>
+    <div class="tablewrap report-scroll">
+    <table class="pivot">
+      <thead><tr><th class="lbl">Category</th><th class="lbl">Type</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for r in income %}<tr><td class="lbl">{{ r.category }}</td><td class="lbl muted">{{ r.income_type }}</td><td class="num">{{ money(r.amount) }}</td></tr>{% else %}
+        <tr><td class="muted" colspan="3">No income categories mapped for {{ year }}.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Deductions <span class="muted">({{ deductions|length }})</span></h2>
+    <div class="tablewrap report-scroll">
+    <table class="pivot">
+      <thead><tr><th class="lbl">Category</th><th class="lbl">Sched</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for r in deductions %}<tr><td class="lbl">{{ r.category }}</td><td class="lbl muted">{{ r.schedule or '—' }}</td><td class="num">{{ money(r.amount) }}</td></tr>{% else %}
+        <tr><td class="muted" colspan="3">No deductible categories mapped.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Tax history</h2>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="num">Year</th><th class="lbl">Filing</th><th class="num">AGI</th>
+      <th class="num">Taxable</th><th class="num">Fed</th><th class="num">State</th>
+      <th class="num">Liability</th><th class="num">Refund/Owe</th><th class="num">Eff.</th><th></th></tr></thead>
+    <tbody>
+      {% for h in history %}
+      <tr><td class="num">{{ h.tax_year }}</td><td class="lbl">{{ h.filing_status or '—' }}</td>
+        <td class="num">{{ money(h.agi) }}</td><td class="num">{{ money(h.taxable_income) }}</td>
+        <td class="num">{{ money(h.federal_tax) }}</td><td class="num">{{ money(h.state_tax) }}</td>
+        <td class="num">{{ money(h.total_liability) }}</td>
+        <td class="num {{ 'pos' if (h.refund_owe or 0) >= 0 else 'neg' }}">{{ money(h.refund_owe) }}</td>
+        <td class="num">{{ pct(h.effective_rate) }}</td>
+        <td><button type="button" class="btn-secondary" data-del-history="{{ h.id }}">Delete</button></td></tr>
+      {% else %}<tr><td class="muted" colspan="10">No history yet — add prior years to enable safe-harbor estimates.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form id="history-form" class="mt-1 acct-form-grid">
+    <label class="field"><span>Year</span><input name="tax_year" type="number" required></label>
+    <label class="field"><span>Filing</span><input name="filing_status" placeholder="SINGLE"></label>
+    <label class="field"><span>Gross income</span><input name="gross_income" type="number" step="0.01"></label>
+    <label class="field"><span>AGI</span><input name="agi" type="number" step="0.01"></label>
+    <label class="field"><span>Taxable</span><input name="taxable_income" type="number" step="0.01"></label>
+    <label class="field"><span>Federal tax</span><input name="federal_tax" type="number" step="0.01"></label>
+    <label class="field"><span>State tax</span><input name="state_tax" type="number" step="0.01"></label>
+    <label class="field"><span>Total liability</span><input name="total_liability" type="number" step="0.01"></label>
+    <label class="field"><span>Refund/Owe</span><input name="refund_owe" type="number" step="0.01"></label>
+    <button type="submit" class="btn-primary">Add year</button>
+  </form>
+</div>
+
+<details class="card">
+  <summary><strong>Config</strong></summary>
+  <form id="tax-config" class="acct-form-grid">
+    <label class="field"><span>Tax year</span><input name="tax_year" type="number" value="{{ config.tax_year }}"></label>
+    <label class="field"><span>Filing status</span>
+      <select name="filing_status">{% for f in filing_statuses %}<option {{ 'selected' if f == config.filing_status }}>{{ f }}</option>{% endfor %}</select></label>
+    <label class="field"><span>State tax, effective rate %</span><input name="state_rate" type="number" step="0.01" min="0" max="100" value="{{ '%.2f' % (config.state_rate * 100) }}"></label>
+    <label class="field"><span>Fed withholding</span><input name="fed_withholding" type="number" step="0.01" value="{{ '%.2f' % config.fed_withholding }}"></label>
+    <label class="field"><span>State withholding</span><input name="state_withholding" type="number" step="0.01" value="{{ '%.2f' % config.state_withholding }}"></label>
+    <label class="field"><span>Estimated payments</span><input name="estimated_payments" type="number" step="0.01" value="{{ '%.2f' % config.estimated_payments }}"></label>
+    <label class="field"><span>401(k)</span><input name="contrib_401k" type="number" step="0.01" value="{{ '%.2f' % config.contrib_401k }}"></label>
+    <label class="field"><span>HSA</span><input name="hsa" type="number" step="0.01" value="{{ '%.2f' % config.hsa }}"></label>
+    <label class="field"><span>IRA</span><input name="ira" type="number" step="0.01" value="{{ '%.2f' % config.ira }}"></label>
+    <label class="field"><span>Student loan interest</span><input name="student_loan_int" type="number" step="0.01" value="{{ '%.2f' % config.student_loan_int }}"></label>
+    <label class="field"><span>Deduction</span>
+      <select name="use_itemized">{% for o in ['AUTO','YES','NO'] %}<option {{ 'selected' if o == config.use_itemized }}>{{ o }}</option>{% endfor %}</select></label>
+    <label class="field"><span>Freelance (SE tax)</span>
+      <select name="freelance"><option value="false" {{ 'selected' if not config.freelance }}>No</option><option value="true" {{ 'selected' if config.freelance }}>Yes</option></select></label>
+    <button type="submit" class="btn-primary">Save config</button>
+  </form>
+</details>
+
+<details class="card">
+  <summary><strong>Category Mapping</strong></summary>
+  <p class="muted">Income = INCOME categories; itemized deductions = DEDUCTIBLE (Schedule A/C).
+    Set deduction type / schedule for deductible rows.</p>
+  <button type="button" id="sync-mapping" class="mb-half btn-secondary">Sync new categories</button>
+  <div class="tablewrap report-scroll">
+  <table class="pivot">
+    <thead><tr><th class="lbl">Category</th><th class="lbl">Group</th><th class="lbl">Role</th>
+      <th class="lbl">Deduction type</th><th class="lbl">Schedule</th></tr></thead>
+    <tbody>
+      {% for m in mapping %}
+      <tr data-cat="{{ m.category }}">
+        <td class="lbl">{{ m.category }}</td><td class="lbl muted">{{ m.group or '—' }}</td>
+        <td class="lbl"><select data-map="role">{% for r in roles %}<option {{ 'selected' if r == m.role }}>{{ r }}</option>{% endfor %}</select></td>
+        <td class="lbl"><input data-map="deduction_type" value="{{ m.deduction_type or '' }}" placeholder="—" size="14"></td>
+        <td class="lbl"><input data-map="schedule" value="{{ m.schedule or '' }}" placeholder="A / C" size="4"></td>
+      </tr>
+      {% else %}<tr><td class="muted" colspan="5">No categories — click “Sync new categories”.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</details>
+
+<script nonce="{{ csp_nonce }}">window.MAPPING_EDITOR = { endpoint: "/api/tax/mapping", syncEndpoint: "/api/tax/sync", reloadOnChange: false };</script>
+<script src="/static/js/mapping-editor.js?v={{ css_v('js/mapping-editor.js') }}"></script>
+<script src="/static/js/tax.js?v={{ css_v('js/tax.js') }}"></script>
+{% endblock %}

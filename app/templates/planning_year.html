@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Year plan — Planning{% endblock %}
+
+{% block content %}
+<div class="page-head planning-head">
+  <h1>Year plan · {{ p.start | month_short }} → {{ p.end | month_short }}</h1>
+  {% with w=p.window %}{% include "_window_nav.html" %}{% endwith %}
+  <span class="muted">
+    {{ p.totals.planned | money }} planned over 12 months · {{ p.totals.unplaced }} not yet placed
+    · {% if p.totals.flagged %}{{ p.totals.flagged | length }} month{{ 's' if p.totals.flagged | length != 1 }} negative: {{ p.totals.flagged | map('month_short') | join(', ') }}{% else %}no negative months{% endif %}
+    {% if p.last_pull %} · last pull {{ p.last_pull.started_at | datetime_short }} ({{ p.last_pull.status }}){% endif %}
+    {% if sync %} · <span class="pill {{ 'ok' if sync == 'ok' else 'over' }}">pull {{ sync }}</span>{% endif %}
+    {% if reconciled is not none %} · <span class="pill {{ 'ok' if reconciled != '0' else 'none' }}">{{ reconciled }} matched to the ledger</span>{% endif %}
+  </span>
+  <span class="grid-toolbar">
+    <input type="search" id="plan-search" class="card-search" placeholder="Search items…" value="{{ q }}" autocomplete="off" aria-label="Search items">
+    <span class="legend"><span><i class="sw funded"></i>funded</span><span><i class="sw unfunded"></i>unfunded</span><span><i class="sw fp"></i>from future-purchases</span></span>
+    <form method="post" action="/api/planning/sync/future-purchases?next=/planning/year" class="inline-form">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+      <button class="btn-secondary" type="submit" {% if not p.pull_configured %}disabled title="FUTURE_PURCHASES_URL is not set"{% endif %}>Sync future-purchases{% if not p.pull_configured %} · not configured{% endif %}</button>
+    </form>
+    <form method="post" action="/api/planning/reconcile?next=/planning/year" class="inline-form">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+      <button class="btn-secondary" type="submit" title="Match placed items to ledger transactions by group, amount and date">Reconcile</button>
+    </form>
+    <button class="btn-primary" type="button" id="add-open">Add planned spend</button>
+  </span>
+</div>
+
+<div class="planning-cols year-cols">
+  <div class="planning-main">
+    <div class="card">
+      <h2>Planned spend by month · click an item · a red month goes negative after planned spend · <span class="estimate">estimated from ledger</span></h2>
+      <div class="tl" id="timeline">
+        {% for m in p.months %}
+        <div class="col {{ 'flag' if m.flag }}" data-month="{{ m.month }}">
+          <div class="mo">{{ m.label.split(' ')[0][:3] }}{% if m.month[5:] == '01' or loop.first %} <small>{{ m.month[2:4] }}</small>{% endif %}<small>{{ m.planned | money }}</small></div>
+          <div class="net {{ 'neg' if m.flag else 'pos' }}">net {{ m.net | money(true) }}</div>
+          {% for it in m['items'] %}
+          <button type="button" class="pin {{ 'fp' if it.origin == 'future-purchases' }} {{ 'unfunded' if it.funding and it.funding.pct < 1 }}" data-id="{{ it.id }}" data-search="{{ it.name }} {{ it.group or '' }} {{ it.external_id or '' }} {{ it.notes or '' }}">
+            {{ it.name }}{% if it.external_status == 'researching' %} <span class="pill none">researching</span>{% endif %}<b>{{ it.amount | money }}</b>
+            {% if it.funding %}<span class="bar"><i data-w="{{ (it.funding.pct * 100) | round(1) }}"></i></span>{% endif %}
+          </button>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <p class="muted">Each month starts from expected income minus recurring bills, variable spend and the savings contribution ({{ (p.target_rate * 100) | round(0) | int }}% of income), then subtracts what is planned there. Variable spend assumes {{ p.variable_daily | money }}/day.</p>
+    </div>
+
+    {% if p.past %}
+    <div class="card" id="past">
+      <h2>Dated earlier than the window · move or mark done</h2>
+      <div class="chips">
+        {% for it in p.past %}<button type="button" class="chip" data-id="{{ it.id }}" data-search="{{ it.name }} {{ it.group or '' }} {{ it.external_id or '' }} {{ it.notes or '' }}">{{ it.name }} · {{ it.amount | money }} · {{ it.month | month_short }}</button>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if p.shelf %}
+    <div class="card" id="shelf">
+      <h2>Not yet placed · {{ p.shelf | length }} · click one to place it</h2>
+      <div class="chips scroll-list">
+        {% for it in p.shelf %}<button type="button" class="chip" data-id="{{ it.id }}" data-search="{{ it.name }} {{ it.group or '' }} {{ it.external_id or '' }} {{ it.notes or '' }}">{{ it.name }} · {{ it.amount | money }}{% if it.origin == 'future-purchases' %} · <span class="pill fp">{{ it.external_id }}</span>{% endif %}{% if it.external_status == 'researching' %} <span class="pill none">researching</span>{% endif %}</button>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card" id="add-card" hidden>
+      <h2 id="add-title">Add planned spend</h2>
+      <form id="flow-form" class="acct-form-grid">
+        <input type="hidden" name="id" id="fl-id" value="">
+        <label class="field"><span>Name</span><input name="name" id="fl-name" required placeholder="Vet · annual"></label>
+        <label class="field"><span>Group</span><input name="group" id="fl-group" required list="groups" placeholder="Pet"><datalist id="groups">{% for g in p.groups %}<option value="{{ g }}">{% endfor %}</datalist></label>
+        <label class="field"><span>Amount</span><input name="amount" id="fl-amount" type="number" step="0.01" min="0" required placeholder="600"></label>
+        <label class="field"><span>Cadence</span><select name="cadence" id="fl-cadence">{% for c in p.cadences %}<option value="{{ c }}"{% if c == 'once' %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+        <label class="field"><span>Month</span><input name="month" id="fl-month" type="month"></label>
+        <label class="field"><span>Exact date <span class="muted">(optional, overrides month)</span></span><input name="anchor_date" id="fl-date" type="date"></label>
+        <label class="field"><span>Funded by</span><select name="goal_id" id="fl-goal"><option value="">— no fund —</option>{% for g in p.goals %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select></label>
+        <label class="field"><span>Notes</span><input name="notes" id="fl-notes" placeholder="optional"></label>
+        <div class="modal-actions"><span class="muted" id="fl-status"></span>
+          <button type="button" class="btn-secondary" id="fl-cancel">Cancel</button>
+          <button type="submit" class="btn-primary" id="fl-submit">Add</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="c-side">
+    <div class="card"><h2>Selected</h2><div class="detail" id="detail"><span class="muted">Click an item on the timeline, the shelf, or the earlier strip.</span></div></div>
+    <div class="card"><h2>Affordability · net after planned spend</h2>
+      <div class="aff" id="aff">
+        {% set scale = p.months | map(attribute='net') | map('abs') | max %}
+        {% for m in p.months %}
+        <span>{{ m.month | month_short }}</span>
+        <span class="track"><i class="{{ 'neg' if m.flag }}" data-w="{{ ((m.net | abs) / (scale or 1) * 50) | round(1) }}"></i></span>
+        <span class="num {{ 'neg' if m.flag else 'pos' }}">{{ m.net | money(true) }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="muted" id="plan-no-match" hidden>No items match.</p>
+<script type="application/json" id="plan-data" nonce="{{ csp_nonce }}">{{ p | tojson }}</script>
+<script src="/static/js/search.js?v={{ css_v('js/search.js') }}"></script>
+<script src="/static/js/planning-search.js?v={{ css_v('js/planning-search.js') }}"></script>
+<script src="/static/js/planning-year.js?v={{ css_v('js/planning-year.js') }}"></script>
+{% endblock %}

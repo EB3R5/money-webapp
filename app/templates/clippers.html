@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Clippers — Money{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Clippers</h1>
+  <span class="muted">One bookmark per board: click it on a web page to add or update from there</span>
+</div>
+
+<div class="clip-wrap">
+  <p class="clip-lede">Drag a button to your bookmarks bar. On a matching page, click it: a popup opens on
+    this app's own address — stay logged in here so it can save. Nothing is written until you press <b>Apply</b>.</p>
+
+  {% for c in clippers %}
+  <section class="clipper" id="clipper-{{ c.key }}">
+    <div class="bmk-row">
+      <a class="bmk" href="{{ c.href }}" draggable="true">{{ c.label }}</a>
+      <a class="muted" href="{{ c.board }}">open {{ c.heading }} ↗</a>
+    </div>
+    <p class="hint">Drag it to the bookmarks bar — clicking it here does nothing (it only runs on another page).</p>
+    <p class="clip-lede">{{ c.lede }}</p>
+    <details>
+      <summary>Can't drag it? Create a bookmark manually and paste this as its URL.</summary>
+      <textarea readonly aria-label="{{ c.heading }} bookmarklet">{{ c.href }}</textarea>
+    </details>
+    <details>
+      <summary>Notes</summary>
+      <ul class="muted">{% for n in c.notes %}<li>{{ n }}</li>{% endfor %}</ul>
+    </details>
+  </section>
+  {% endfor %}
+
+  <div class="step"><span>1.</span><span>Show the bookmarks bar (<b>⌘⇧B</b> in Chrome / Safari).</span></div>
+  <div class="step"><span>2.</span><span><b>Drag</b> a button above onto it.</span></div>
+  <div class="step"><span>3.</span><span>On a page to clip, <b>click the bookmark</b>. If a card already matches it is preselected;
+    otherwise search for it, or add it as new.</span></div>
+  <div class="step"><span>4.</span><span>The bookmarks are tied to the address this page is served on. If you run the app elsewhere, set
+    <code>BASE_URL</code> in <code>.env</code> and re-drag them.</span></div>
+</div>
+
+<style nonce="{{ csp_nonce }}">
+  .clip-wrap { max-width: 720px; padding: 4px 0 60px; }
+  .clip-lede { color: var(--muted); margin: 0 0 18px; line-height: 1.5; }
+  .clipper { border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); padding: 14px 18px 10px; margin: 0 0 18px; }
+  .bmk-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 4px 0 6px; }
+  .bmk { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: grab;
+    font-weight: 600; font-size: 15px; padding: 12px 18px; border-radius: var(--radius); color: #fff;
+    background: var(--accent); border: 1px solid var(--accent); }
+  .hint { font-size: 12px; color: var(--muted); margin: 4px 0 12px; }
+  .step { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .clip-wrap textarea { width: 100%; height: 90px; margin-top: 10px; font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; resize: vertical; }
+  .clip-wrap code { font-family: ui-monospace, Menlo, monospace; background: rgba(0,0,0,.05); padding: 1px 5px; border-radius: 4px; }
+  .clip-wrap ul { font-size: 13px; line-height: 1.5; padding-left: 18px; margin: 8px 0 4px; }
+</style>
+{% endblock %}

@@ -1,0 +1,179 @@
+{
+ "_comment": "The starter inventory taxonomy a fresh database gets (app/starter.py): one row per Item Category with the Group the Inventory pages flip through and two descriptive lists \u2014 Subcategory (what the category tends to hold) and Classification (Apparel | Accessory | Technology | Equipment | Furniture | Home Goods | Kitchen Equipment | Media | Consumable | Supply | Asset). Neither list cascades onto Items. Edit freely on the Categories page afterwards; this file is read once, when the table is empty.",
+ "inventory_categories": [
+  {
+   "Category": "Clothing",
+   "Group": "Apparel",
+   "Subcategory": "Jeans, Outerwear, Shorts, Socks, Sweatpants, T-shirts, Underwear",
+   "Classification": "Apparel"
+  },
+  {
+   "Category": "Footwear",
+   "Group": "Apparel",
+   "Subcategory": "Boots, Sandals, Sneakers",
+   "Classification": "Apparel"
+  },
+  {
+   "Category": "Accessories",
+   "Group": "Apparel",
+   "Subcategory": "Bags, Belts, Hats, Watches",
+   "Classification": "Apparel, Accessory"
+  },
+  {
+   "Category": "Computers",
+   "Group": "Electronics",
+   "Subcategory": "Desktop, Docking Station, Laptop, Monitor, Peripherals, Storage",
+   "Classification": "Technology, Equipment"
+  },
+  {
+   "Category": "Phones & Tablets",
+   "Group": "Electronics",
+   "Subcategory": "Smartphone, Tablet, E-reader",
+   "Classification": "Technology"
+  },
+  {
+   "Category": "Audio",
+   "Group": "Electronics",
+   "Subcategory": "Headphones, Speakers, Audio Interface, Turntable",
+   "Classification": "Technology, Equipment"
+  },
+  {
+   "Category": "Photography",
+   "Group": "Electronics",
+   "Subcategory": "Camera, Lens, Camera Accessories, Tripod, Lighting",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Home Entertainment",
+   "Group": "Electronics",
+   "Subcategory": "Television, Streaming Device, Gaming Console, Gaming Accessories, Projector",
+   "Classification": "Technology, Equipment"
+  },
+  {
+   "Category": "Smart Home",
+   "Group": "Electronics",
+   "Subcategory": "Hub, Sensors, Smart Plugs, Smart Lighting, Thermostat",
+   "Classification": "Technology"
+  },
+  {
+   "Category": "Networking",
+   "Group": "Electronics",
+   "Subcategory": "Router, Switch, Access Point, Modem",
+   "Classification": "Technology, Equipment"
+  },
+  {
+   "Category": "Media",
+   "Group": "Entertainment",
+   "Subcategory": "Books, Records, Games, Films",
+   "Classification": "Media"
+  },
+  {
+   "Category": "Musical Instruments",
+   "Group": "Entertainment",
+   "Subcategory": "Guitars, Keyboards, Amplifiers, Accessories",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Personal Care",
+   "Group": "Health",
+   "Subcategory": "Electric Razor, Electric Toothbrush, Hair Care",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Health & Safety",
+   "Group": "Health",
+   "Subcategory": "First Aid, Air Purifier, Monitors, Safety Gear",
+   "Classification": "Equipment, Supply"
+  },
+  {
+   "Category": "Furniture",
+   "Group": "Home",
+   "Subcategory": "Bed, Bookshelf, Chair, Desk, Dining Table, Sofa, Storage",
+   "Classification": "Furniture"
+  },
+  {
+   "Category": "Home Goods",
+   "Group": "Home",
+   "Subcategory": "Bedding, Pillows, Rugs, Curtains, Decor",
+   "Classification": "Home Goods"
+  },
+  {
+   "Category": "Home Appliances",
+   "Group": "Home",
+   "Subcategory": "Vacuum Cleaner, Washer, Dryer, Fans, Heaters, Air Filters",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Cleaning Supplies",
+   "Group": "Home",
+   "Subcategory": "Cleaning Cloths, Spray Bottles, Trash Cans, Brooms",
+   "Classification": "Consumable, Supply"
+  },
+  {
+   "Category": "Kitchen Appliances",
+   "Group": "Kitchen",
+   "Subcategory": "Coffee Maker, Kettle, Blender, Toaster, Microwave, Cooker",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Kitchenware",
+   "Group": "Kitchen",
+   "Subcategory": "Cookware, Cutlery, Cutting Board, Utensils, Measuring Tools, Food Storage",
+   "Classification": "Kitchen Equipment"
+  },
+  {
+   "Category": "Dining",
+   "Group": "Kitchen",
+   "Subcategory": "Drinkware, Glassware, Tableware",
+   "Classification": "Home Goods"
+  },
+  {
+   "Category": "Kitchen Storage",
+   "Group": "Kitchen",
+   "Subcategory": "Pan Organizer, Spice Rack, Containers",
+   "Classification": "Furniture"
+  },
+  {
+   "Category": "Office",
+   "Group": "Office",
+   "Subcategory": "Scanner, Printer, Stationery, Desk Accessories, Lighting",
+   "Classification": "Equipment, Supply"
+  },
+  {
+   "Category": "Sports & Fitness",
+   "Group": "Sports & Fitness",
+   "Subcategory": "Gym Equipment, Bags, Bikes, Outdoor Gear",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Tools",
+   "Group": "Tools & Equipment",
+   "Subcategory": "Power Tools, Hand Tools, Toolkits, Measuring Tools, Organizers",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Garden & Outdoor",
+   "Group": "Tools & Equipment",
+   "Subcategory": "Lawn Care, Garden Tools, Outdoor Furniture, Grill",
+   "Classification": "Equipment"
+  },
+  {
+   "Category": "Travel",
+   "Group": "Travel",
+   "Subcategory": "Luggage, Packing Cubes, Toiletry Bag, Travel Accessories",
+   "Classification": "Accessory"
+  },
+  {
+   "Category": "Vehicles",
+   "Group": "Vehicles",
+   "Subcategory": "Car, Motorcycle, Bicycle, Accessories",
+   "Classification": "Asset"
+  },
+  {
+   "Category": "Pets",
+   "Group": "Pets",
+   "Subcategory": "Beds, Carriers, Feeders, Toys",
+   "Classification": "Supply"
+  }
+ ]
+}

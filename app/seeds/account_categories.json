@@ -1,0 +1,195 @@
+{
+ "_comment": "The starter balance-sheet taxonomy a fresh database gets (app/starter.py): one row per account Category with the Group the Balances page flips through and the coarse Type the balance sheet reads \u2014 Assets | Liabilities | Equity (Equity holds brokerage holdings and counts with Assets, app/networth.py). The Add-account presets (app/views/accounts.py) name Checking Account, Credit Card Debt, Common Stock and Loan, so those four stay. Edit freely on the Categories page afterwards; this file is read once, when the table is empty.",
+ "account_categories": [
+  {
+   "Category": "Cash & Equivalents",
+   "Group": "Current Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Checking Account",
+   "Group": "Current Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Savings Account",
+   "Group": "Current Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Money Market",
+   "Group": "Current Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Certificate of Deposit",
+   "Group": "Current Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Accounts Receivable",
+   "Group": "Current Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Prepaid Expenses",
+   "Group": "Current Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Brokerage Cash",
+   "Group": "Investments",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Retirement Account",
+   "Group": "Investments",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Health Savings Account",
+   "Group": "Investments",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Education Savings",
+   "Group": "Investments",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Cryptocurrency",
+   "Group": "Investments",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Real Estate",
+   "Group": "Property & Equipment",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Vehicles",
+   "Group": "Property & Equipment",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Equipment",
+   "Group": "Property & Equipment",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Furniture & Fixtures",
+   "Group": "Property & Equipment",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Computer",
+   "Group": "Property & Equipment",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Other Asset",
+   "Group": "Other Assets",
+   "Type": "Assets"
+  },
+  {
+   "Category": "Credit Card Debt",
+   "Group": "Current Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Loan",
+   "Group": "Current Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Accounts Payable",
+   "Group": "Current Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Accrued Expenses",
+   "Group": "Current Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Taxes Payable",
+   "Group": "Current Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Current Portion of Long-term Debt",
+   "Group": "Current Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Mortgage",
+   "Group": "Long-term Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Car Loans",
+   "Group": "Long-term Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Student Loans",
+   "Group": "Long-term Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Personal Loans",
+   "Group": "Long-term Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Business Loans",
+   "Group": "Long-term Liabilities",
+   "Type": "Liabilities"
+  },
+  {
+   "Category": "Common Stock",
+   "Group": "Stockholder's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Preferred Stock",
+   "Group": "Stockholder's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Exchange-Traded Fund",
+   "Group": "Stockholder's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Mutual Fund",
+   "Group": "Stockholder's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Bonds",
+   "Group": "Stockholder's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Additional Paid-in Capital",
+   "Group": "Stockholder's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Owner's Capital",
+   "Group": "Owner's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Retained Earnings",
+   "Group": "Owner's Equity",
+   "Type": "Equity"
+  },
+  {
+   "Category": "Current Year Earnings",
+   "Group": "Owner's Equity",
+   "Type": "Equity"
+  }
+ ]
+}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{% if current %}{{ current.Name }} — {% endif %}Kits — Money{% endblock %}
+
+{% macro money(v) -%}
+  {%- if v is none -%}<span class="muted">—</span>{%- else -%}${{ "{:,.0f}".format(v) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro statline(st) -%}
+  {{ st.count }} items · {{ st.n_inv }} inventory{% if st.n_sw %} · {{ st.n_sw }} software{% endif %}
+  · {{ money(st.value) }} value{% if st.monthly %} · {{ money(st.monthly) }}/mo{% endif %}
+{%- endmacro %}
+
+{% macro badge(m) -%}
+  {%- if m.table == 'software' -%}<span class="kit-badge" title="Software">SW</span>{%- endif -%}
+  {%- if m.status and not m.active -%}<span class="kit-badge kit-badge-status">{{ m.status.replace('_', ' ') }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="kits-page">
+<div class="page-head">
+  <h1>Kits</h1>
+  <span class="muted"><span id="kit-count">{{ kits|length }}</span> kits</span>
+</div>
+
+<div class="kits">
+  <aside class="kits-side">
+    <button type="button" class="btn-primary kits-new" id="card-add">＋ New kit</button>
+    <nav class="kits-nav" aria-label="Kits">
+      {% for k in kits %}
+      <a href="/kits/{{ k.id }}" class="{{ 'active' if current and k.id == current._id }}" data-kit="{{ k.id }}">
+        {% if k.cover %}<img src="{{ k.cover }}" alt="" loading="lazy" />{% else %}<span class="kit-nophoto">—</span>{% endif %}
+        <span class="kits-nav-name">{{ k.name }}</span><span class="muted kits-nav-count">{{ k.count }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  {% if not current %}
+  <section class="kit-empty">
+    <h2>No kits yet</h2>
+    <p class="muted">A Kit is a set of Items and Software that serve one purpose — the home gym, the sous-vide setup, the backup chain — with a description, how to use it, and the pictures of everything in it.</p>
+    <p class="muted">Press <b>＋ New kit</b> to make the first one.</p>
+  </section>
+  {% else %}
+  <section class="kit" data-kit="{{ current._id }}">
+    <div class="kit-hero" id="kit-hero">
+      {% if current.cover %}<img src="{{ current.cover }}" alt="" id="kit-cover" />{% endif %}
+      <div class="kit-hero-text">
+        <h2>{{ current.Name }}</h2>
+        {% if current.Description %}<p>{{ current.Description }}</p>{% endif %}
+        <span class="muted" id="kit-stats">{{ statline(current.stats) }}</span>
+      </div>
+      {# card-editor.js opens the modal from this button (rowSelector); the id is the Kit's row id #}
+      <button type="button" class="btn-secondary kit-edit" data-id="{{ current._id }}">✎ Edit kit</button>
+    </div>
+
+    <div class="kit-cols">
+      <div class="kit-panel">
+        <h3>How to use</h3>
+        {% if current.how_to_html %}<div class="kit-howto">{{ current.how_to_html | safe }}</div>
+        {% else %}<p class="muted">Nothing written yet — <b>Edit kit</b> to add how this is used.</p>{% endif %}
+      </div>
+      <div class="kit-panel">
+        <h3>What's in it</h3>
+        <dl class="kit-kv" id="kit-facts">
+          <dt>Items</dt><dd>{{ current.stats.n_inv }} inventory{% if current.stats.n_sw %}, {{ current.stats.n_sw }} software{% endif %}</dd>
+          <dt>Replacement value</dt><dd>{{ money(current.stats.value) }}</dd>
+          <dt>Subscriptions</dt><dd>{% if current.stats.monthly %}{{ money(current.stats.monthly) }}/mo{% else %}<span class="muted">none</span>{% endif %}</dd>
+          <dt>With photos</dt><dd>{{ current.stats.with_photo }} of {{ current.stats.count }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <section class="acct-section">
+      <div class="acct-section-head"><h2>Everything in this kit</h2><span class="muted" id="kit-member-count">{{ current.stats.count }} items</span></div>
+      <p class="muted" id="kit-no-members" {% if current.members %}hidden{% endif %}>Nothing in this kit yet — add members below.</p>
+      <div class="kit-grid" id="kit-grid">
+        {% for m in current.members %}
+        <figure class="kit-tile" data-key="{{ m.key }}" title="{{ m.title }}">
+          <a href="{{ m.href }}" class="kit-tile-link">
+            {% if m.image %}<img src="{{ m.image }}" alt="" loading="lazy" />{% else %}<span class="kit-nophoto">no photo</span>{% endif %}
+            <span class="kit-badges">{{ badge(m) }}</span>
+            <figcaption>{{ m.title }} · {{ money(m.amount) }}{% if m.table == 'software' and m.amount %}/mo{% endif %}</figcaption>
+          </a>
+          {% if m.link %}<a class="acct-link kit-link" href="{{ m.link }}" target="_blank" rel="noopener" title="Open link" aria-label="Open link in a new tab">↗</a>{% endif %}
+        </figure>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="acct-section">
+      <div class="acct-section-head"><h2>Manage members</h2><span class="muted">click to select, move with the arrows — each move saves at once</span></div>
+      <div class="kit-transfer" id="kit-transfer">
+        <div class="kit-box">
+          <header>Available <input type="search" id="kit-avail-q" placeholder="Filter…" aria-label="Filter available items" autocomplete="off" /><span class="muted" id="kit-avail-count"></span></header>
+          <ul id="kit-avail" aria-label="Available"></ul>
+        </div>
+        <div class="kit-mid">
+          <button type="button" class="btn-secondary" id="kit-add" title="Add selected to the kit" disabled>→</button>
+          <button type="button" class="btn-secondary" id="kit-remove" title="Remove selected from the kit" disabled>←</button>
+        </div>
+        <div class="kit-box">
+          <header>In this kit <span class="muted" id="kit-in-count"></span></header>
+          <ul id="kit-in" aria-label="In this kit"></ul>
+        </div>
+      </div>
+      <p class="muted" id="kit-transfer-status"></p>
+    </section>
+  </section>
+  {% endif %}
+</div>
+
+{% include "_card_modal.html" %}
+
+<script nonce="{{ csp_nonce }}">window.CARD = {
+  data: {{ sections | tojson }},
+  fields: {{ fields | tojson }},
+  idField: {{ cfg.id_field | tojson }},
+  titleField: {{ cfg.title_field | tojson }},
+  imagesEnabled: {{ cfg.images_enabled | tojson }},
+  documentsEnabled: {{ cfg.documents_enabled | tojson }},
+  kitsEnabled: false,
+  searchFields: [],
+  extra: {},
+};
+window.KIT = {
+  id: {{ (current._id if current else none) | tojson }},
+  memberKeys: {{ (current.member_keys if current else []) | tojson }},
+  members: {{ (current.members if current else []) | tojson }},
+  available: {{ available | tojson }},
+};</script>
+<script src="/static/js/card-editor.js?v={{ css_v('js/card-editor.js') }}"></script>
+<script src="/static/js/kits.js?v={{ css_v('js/kits.js') }}"></script>
+</div>
+{% endblock %}

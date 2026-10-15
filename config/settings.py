@@ -27,7 +27,7 @@ DEBUG = False
 # service name, and the public origin (BASE_URL: the tailnet host behind `tailscale serve`,
 # which forwards the scheme, or whatever reverse proxy fronts a public deployment).
 _base = urlsplit(c.BASE_URL) if c.BASE_URL else None
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "money-next",
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "money",
                  *([_base.hostname] if _base and _base.hostname else []),
                  *[h.strip() for h in os.environ.get("ALLOWED_HOSTS_EXTRA", "").split(",") if h.strip()]]
 CSRF_TRUSTED_ORIGINS = [f"{_base.scheme}://{_base.netloc}"] if _base and _base.netloc else []

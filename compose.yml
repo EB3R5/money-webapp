@@ -9,11 +9,11 @@
 #
 # A larger stack defines its own services and does not include this file. The image runs as root, so ./data ends up root-owned 0700 (docs/SECURITY.md).
 services:
-  money-next:
+  money:
     build:
       context: .
       dockerfile: packaging/docker/Dockerfile
-    container_name: money-next
+    container_name: money
     restart: unless-stopped
     env_file: .env
     environment:
@@ -27,11 +27,11 @@ services:
 
   # The scheduler (the feed's runs, the session clean-up): the same image and data directory,
   # started once the web service is healthy so only one process applies the schema.
-  money-next-jobs:
+  money-jobs:
     build:
       context: .
       dockerfile: packaging/docker/Dockerfile
-    container_name: money-next-jobs
+    container_name: money-jobs
     restart: unless-stopped
     env_file: .env
     environment:
@@ -42,5 +42,5 @@ services:
     healthcheck:
       disable: true
     depends_on:
-      money-next:
+      money:
         condition: service_healthy

@@ -1,8 +1,8 @@
 # Deployment contract
 
 What this repository promises to whoever runs it, and what it leaves to the host. The
-Django build (ADR-0024) runs as two processes from one image: the web service `money-next`
-and its jobs process `money-next-jobs`.
+Django build (ADR-0024) runs as two processes from one image: the web service `money`
+and its jobs process `money-jobs`.
 
 ## This repository owns
 
@@ -20,7 +20,7 @@ bind-mounted data directory ends up root-owned. Threat model and the compromise 
 `docs/SECURITY.md`.
 
 `FUTURE_PURCHASES_URL` (optional): where the Year plan's Pull reads future-purchases' planned
-export, on demand only (ADR-0023). When both apps share a Docker network, money-next gets
+export, on demand only (ADR-0023). When both apps share a Docker network, money gets
 `FUTURE_PURCHASES_URL: http://future-purchases:8000` in its `environment:` block. Unset = the
 Pull is off and the buttons say so.
 
@@ -38,8 +38,8 @@ clipper's GitHub limit from 60 to 5,000 requests/hour), and for the optional Sim
 only, never the database, claimed once with `python -m app.simplefin.claim`). `.env` is this app's own file and is
 read by the venv server, the desktop wrappers, and the reference compose file alike.
 
-**A reference `compose.yml` at the repo root.** Two services from one image — `money-next` and
-`money-next-jobs` — sharing `./data:/app/data` and `env_file: .env`, the web one published on
+**A reference `compose.yml` at the repo root.** Two services from one image — `money` and
+`money-jobs` — sharing `./data:/app/data` and `env_file: .env`, the web one published on
 `127.0.0.1:8012:8000`, the jobs one started once the web one is healthy.
 `docker compose up -d --build` is the one-command run. A larger stack defines its own services
 and does not include this file.

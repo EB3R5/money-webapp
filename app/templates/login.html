@@ -11,7 +11,6 @@
   <main class="login">
     <form class="login-card" method="post" action="/login">
       <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
-      <img class="login-mark" src="/static/img/mark.png" alt="" width="44" height="44" />
       <h1>Money</h1>
       {% if error %}<p class="login-error" role="alert">{{ error }}</p>{% endif %}
       <label>Username

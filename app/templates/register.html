@@ -11,7 +11,6 @@
   <main class="login">
     <form class="login-card" method="post" action="{{ action }}">
       <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
-      <img class="login-mark" src="/static/img/mark.png" alt="" width="44" height="44" />
       <h1>Money</h1>
       <p class="muted">You have been invited. Choose your username and password to join.</p>
       {% for e in errors %}<p class="login-error" role="alert">{{ e }}</p>{% endfor %}

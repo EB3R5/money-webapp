@@ -73,7 +73,6 @@ body.pad { display: grid; grid-template-columns: var(--stub-w) minmax(0, 1fr); m
 .stub .brand { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
   font-family: var(--serif); font-size: 22px; font-weight: 500; letter-spacing: -.01em;
   color: var(--ink); text-decoration: none; margin: 0 0 14px 4px; }
-.stub .brand img { width: 28px; height: 28px; display: block; }
 .stub nav { display: flex; flex-direction: column; gap: 2px; }
 .stub nav a, .stub summary {
   display: block; padding: 5px 8px; border-radius: var(--radius);
@@ -1027,7 +1026,6 @@ table.pivot .neg, table.t .neg { color: var(--red-ink); }
 .login { padding-top: 14vh; }
 .login-card { width: 320px; padding: 30px 28px 26px; background: var(--sheet); border: 1px solid var(--rule); border-left: 2px solid var(--rule-blue); border-radius: var(--radius); }
 .login-card h1 { font-family: var(--serif); font-weight: 500; font-size: 30px; text-align: left; margin: 0 0 10px; }
-.login-mark { display: block; width: 44px; height: 44px; margin: 0 0 6px -2px; }
 .login-error { background: var(--red-ink-tint); color: var(--red-ink); border-radius: var(--radius); }
 .login-help { text-align: left; }
 

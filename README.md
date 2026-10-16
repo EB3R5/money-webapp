@@ -1,17 +1,5 @@
 # money-webapp
 
-<p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard: monthly cash flow and top spending categories" width="100%">
-</p>
-<p align="center">
-  <img src="docs/screenshots/ledger.png" alt="Ledger: the transaction grid with categories applied" width="49%">
-  <img src="docs/screenshots/planning-month.png" alt="Planning, Month page: budget vs actual beside the month's journal entry" width="49%">
-</p>
-<p align="center">
-  <img src="docs/screenshots/notebook.png" alt="Notebook: the month's figures and journal entry, with the entries rail" width="100%">
-</p>
-<p align="center"><sub>Dashboard; the Ledger; a month in Planning; the Notebook. Invented sample data.</sub></p>
-
 A personal finance web app over a SQLite data directory. A Django app serves an editable
 Ledger, Accounts, Inventory, Software, Kits, Balances, P&L, Balance Sheet, Dashboard, and a Planning
 section (a monthly journal over the ledger's figures, a Notebook, a Planner, typed Expected flows,

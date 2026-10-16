@@ -12,29 +12,7 @@ Assets, trust boundaries, the threat model, and the compromise runbook are in
 [`docs/SECURITY.md`](docs/SECURITY.md); what the host owns in [`docs/deployment.md`](docs/deployment.md);
 backups in [`docs/backups.md`](docs/backups.md).
 
-## Layout
-
-```
-manage.py            Django's command line (init_store, migrate, bootstrap_admin, run_jobs, …)
-config/              settings (read from app/config.py), the URL root, the Jinja environment,
-                     the gunicorn config
-app/                 the Django app
-  config.py          .env loading, paths, cache-bust helper
-  middleware.py      the request pipeline: headers + CSP nonce, body limit, fetch metadata,
-                     the auth gate, the per-request store scope, DomainError → JSON 4xx
-  accounts.py        the first account (setup form or headless bootstrap), the forced password change
-  store/             one module per entity: the SQL, the field map, the schema files
-  audit.py           snapshot rows to the `deletions` table before hard-deletes
-  views/             one module per page (ledger, balances, accounts, inventory, software,
-                     kits, clippers, reports, dashboard, budgets, planning, categories,
-                     categorization, …); app/urls.py lists them in match order
-  management/        init_store, bootstrap_admin, run_jobs, invite, reset_link, api_token
-  templates/         Jinja templates (base.html + one per page)
-  static/            app.css + one JS island per page
-scripts/             tooling (db_census, schema_doc, seed_kits, prune_blobs)
-```
-
-### Categorization
+## Categorization
 
 Transactions get a Category two ways, kept apart on purpose. **Rules** (`/categorization`,
 Rules tab) are first-match-wins substring/amount conditions with an explicit order and an

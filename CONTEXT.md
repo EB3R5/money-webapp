@@ -523,6 +523,14 @@ in its JSON column, read merged over the domain's defaults so a missing or parti
 works — `registry.ConfigDoc`. Domains validate their fields; the Config doc owns get/save.
 _Avoid_: settings, preferences, options doc
 
+**Chart colours**:
+The six series colours every ECharts view draws from (net / top categories, income, spend,
+series 4–6), chosen per user on the Dashboard's folded panel or Settings → Appearance and
+kept on the Profile as overrides (`app/chart_colors.py`); each page puts them on `<html>` as
+`--chart-*` tokens and `chart-theme.js` reads them from there. Not the ledger's money-in /
+money-out ink.
+_Avoid_: theme, palette, colour scheme
+
 **Category roster**:
 The distinct set of ledger Categories, each carried with its `Group` and whether any of its
 transactions is `Type=="Income"` (the seed signal). Scanned from `transactions`, not stored.

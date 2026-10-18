@@ -2,6 +2,7 @@
 // balance (ECharts) with event markers and the low point, the callout line, and the events
 // table. Everything shown is an estimate from the ledger; the card says so in its title.
 (function () {
+  const C = (role) => window.chartTheme.color(role);   // the user's chart colours (chart-theme.js)
   const usd = (v) => (v < 0 ? "−" : "") + "$" + Math.abs(Math.round(v)).toLocaleString("en-US");
   const signed = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + "$" + Math.abs(Math.round(v)).toLocaleString("en-US");
   const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -29,7 +30,7 @@
       const marks = Object.keys(byDate).map((d) => {
         const evs = byDate[d]; const last = evs[evs.length - 1];
         const income = evs.some((e) => e.amount > 0);
-        return { coord: [d, last.balance_after], itemStyle: { color: income ? "#4f6b8c" : "#a4302a" }, symbol: "circle", symbolSize: 8,
+        return { coord: [d, last.balance_after], itemStyle: { color: income ? C("net") : C("spend") }, symbol: "circle", symbolSize: 8,
                  value: evs.map((e) => e.label + " " + signed(e.amount)).join(", ") };
       });
       chart.setOption({
@@ -39,9 +40,9 @@
         xAxis: { type: "category", data: f.series.map((p) => p.date), axisLabel: { formatter: (v) => (v.slice(8) === "01" ? MON[+v.slice(5, 7) - 1] : "") , interval: 0 }, axisTick: { show: false } },
         yAxis: { type: "value", axisLabel: { formatter: usd }, splitLine: { lineStyle: { color: "rgba(0,0,0,.08)" } } },
         series: [{
-          type: "line", data: f.series.map((p) => p.balance), showSymbol: false, lineStyle: { width: 2, color: "#4f6b8c" },
+          type: "line", data: f.series.map((p) => p.balance), showSymbol: false, lineStyle: { width: 2, color: C("net") },
           areaStyle: { color: "rgba(79,107,140,.08)" },
-          markPoint: { data: marks.concat([{ coord: [f.low.date, f.low.balance], symbol: "pin", symbolSize: 34, itemStyle: { color: "#a4302a" },
+          markPoint: { data: marks.concat([{ coord: [f.low.date, f.low.balance], symbol: "pin", symbolSize: 34, itemStyle: { color: C("spend") },
             label: { formatter: "low", color: "#fff", fontSize: 10 }, value: "low " + usd(f.low.balance) }]), label: { show: false } },
           markLine: { silent: true, symbol: "none", lineStyle: { color: "rgba(0,0,0,.25)", type: "dashed" }, data: [{ yAxis: 0 }], label: { show: false } },
         }],

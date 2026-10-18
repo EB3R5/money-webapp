@@ -2,6 +2,7 @@
 // config CRUD. Mutations POST JSON to /api/metrics/savings/* then reload to repaint the
 // server-rendered tables.
 (function () {
+  const C = (role) => window.chartTheme.color(role);   // the user's chart colours (chart-theme.js)
   const usd = (v) => "$" + Math.round(v).toLocaleString("en-US");
   const pct = (v) => (v * 100).toFixed(1) + "%";
   const year = window.METRICS_YEAR;
@@ -35,9 +36,9 @@
             { type: "value", name: "rate", max: 1, axisLabel: { formatter: (v) => pct(v) } },
           ],
           series: [
-            { name: "Saved", type: "bar", data: rows.map((r) => r.savings), itemStyle: { color: "#2f6b4f" } },
-            { name: "Target", type: "line", data: rows.map((r) => r.target), itemStyle: { color: "#a4302a" } },
-            { name: "Rate", type: "line", yAxisIndex: 1, smooth: true, data: rows.map((r) => r.rate), itemStyle: { color: "#4f6b8c" } },
+            { name: "Saved", type: "bar", data: rows.map((r) => r.savings), itemStyle: { color: C("income") } },
+            { name: "Target", type: "line", data: rows.map((r) => r.target), itemStyle: { color: C("spend") } },
+            { name: "Rate", type: "line", yAxisIndex: 1, smooth: true, data: rows.map((r) => r.rate), itemStyle: { color: C("net") } },
           ],
         });
       });
@@ -69,11 +70,11 @@
           yAxis: { type: "value", axisLabel: { formatter: usd } },
           series: [
             { name: "Actual balance", type: "line", data: actual, smooth: true,
-              itemStyle: { color: "#2f6b4f" },
+              itemStyle: { color: C("income") },
               markLine: { silent: true, symbol: "none",
-                          lineStyle: { type: "dotted", color: "#5c6670" }, data: goalLines } },
+                          lineStyle: { type: "dotted", color: C("s6") }, data: goalLines } },
             { name: "Projected", type: "line", data: projected, smooth: true,
-              lineStyle: { type: "dashed" }, itemStyle: { color: "#4f6b8c" } },
+              lineStyle: { type: "dashed" }, itemStyle: { color: C("net") } },
           ],
         });
       });
@@ -89,10 +90,10 @@
       .then((d) => {
         const hist = d.history || [], months = d.forward_months || [], scen = d.scenarios || [];
         const xs = hist.map((h) => h.month).concat(months);
-        const palette = ["#4f6b8c", "#2f6b4f", "#a4302a", "#8a6414", "#5b3fa6"];
+        const palette = ["net", "income", "spend", "s4", "s5"].map(C);
         const actual = hist.map((h) => h.balance).concat(months.map(() => null));
         const series = [{ name: "Actual to date", type: "line", data: actual, smooth: true,
-                          showSymbol: false, itemStyle: { color: "#5c6670" } }];
+                          showSymbol: false, itemStyle: { color: C("s6") } }];
         scen.forEach((s, i) => {
           const arr = hist.map(() => null);
           if (hist.length) arr[hist.length - 1] = d.balance_now;

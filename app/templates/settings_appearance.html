@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Appearance — Passbook{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>Appearance</h1>
+  <span class="muted">Yours alone: each account keeps its own choices.</span>
+</div>
+
+{% with open=True, next="/settings/appearance" %}{% include "_chart_colours.html" %}{% endwith %}
+
+<script src="/static/js/chart-colours.js?v={{ css_v('js/chart-colours.js') }}"></script>
+{% endblock %}

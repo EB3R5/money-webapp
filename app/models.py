@@ -3,7 +3,8 @@
 
 Profile: one row per user, created on demand. `must_change_password` is set on the account
 `bootstrap_admin` seeds from DEFAULT_USER / DEFAULT_PASSWORD and cleared the first time that
-password is changed; the auth gate sends a flagged user to /account until then."""
+password is changed; the auth gate sends a flagged user to /account until then.
+`chart_colors` holds the user's chart colours as overrides over the defaults."""
 
 from django.conf import settings
 from django.db import models
@@ -13,6 +14,7 @@ from django.utils import timezone
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     must_change_password = models.BooleanField(default=False)
+    chart_colors = models.JSONField(default=dict, blank=True)   # role → hex overrides (app/chart_colors.py)
 
     class Meta:
         db_table = "money_profile"

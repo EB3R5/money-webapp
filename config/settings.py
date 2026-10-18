@@ -76,7 +76,7 @@ TEMPLATES = [
         "APP_DIRS": False,
         "OPTIONS": {
             "environment": "config.jinja2.environment",
-            "context_processors": ["app.context_processors.security"],
+            "context_processors": ["app.context_processors.security", "app.context_processors.chart_colors"],
         },
     },
     {

@@ -1,10 +1,15 @@
-# money-webapp
+# Passbook
 
-A personal finance web app over a SQLite data directory. A Django app serves an editable
+Passbook is a personal finance web app over a SQLite data directory. A Django app serves an editable
 Ledger, Accounts, Inventory, Software, Kits, Balances, P&L, Balance Sheet, Dashboard, and a Planning
 section (a monthly journal over the ledger's figures, a Notebook, a Planner, typed Expected flows,
 and a Year plan of planned spend pulled from future-purchases on demand); transactions and
 balances arrive from the SimpleFIN Bridge (optional) and from what you type.
+
+The design is inspired by passbooks, the small bank booklets in which every deposit and
+withdrawal was entered by hand in columns with the balance carried forward. Pale ledger-green
+paper, one column rule down the page, serif headings over tabular figures, red ink only for
+money going out and bank green for money coming in.
 
 Architecture decisions are recorded in [`docs/adr/`](docs/adr/); the domain vocabulary
 lives in [`CONTEXT.md`](CONTEXT.md).

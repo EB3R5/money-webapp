@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}App Activity — Money{% endblock %}
+{% block title %}App Activity — Passbook{% endblock %}
 
 {% macro ts(dt) -%}
   {%- if dt -%}{{ dt.strftime("%Y-%m-%d %H:%M") }}{%- else -%}<span class="muted">never</span>{%- endif -%}

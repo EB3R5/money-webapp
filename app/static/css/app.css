@@ -1,4 +1,4 @@
-/* Columnar pad — the sheet, its rules, and the figures. Tokens first; the old names
+/* Passbook — the columnar pad: the sheet, its rules, and the figures. Tokens first; the old names
    (--bg, --panel, --text, --muted, --border, --accent) stay as aliases so every component
    below re-tints from the same six values. */
 @font-face { font-family: "Literata"; font-style: normal; font-weight: 400 700; font-display: swap;
@@ -29,7 +29,7 @@
   --bank-green-tint: #e1ede6;
   --amber: #8a6414;          /* a warning, an estimate */
   --amber-tint: #f3ecd6;
-  --plum: var(--plum);           /* planned spend pulled from Future purchases */
+  --plum: #5b4a86;           /* planned spend pulled from Future purchases */
   --plum-tint: #ece6f6;
 
   --bg: var(--paper); --panel: var(--sheet); --text: var(--ink); --muted: var(--graphite);

@@ -1,5 +1,5 @@
-// Dashboard — ECharts views fed by /api/dashboard/* aggregation endpoints. The series colours
-// come from chartTheme (the user's chart colours); the panel's preview fires "chart-colours"
+// Dashboard — ECharts views fed by /api/dashboard/* aggregation endpoints. The series colors
+// come from chartTheme (the user's chart colors); the panel's preview fires "chart-colors"
 // and both charts are drawn again from the data already fetched.
 (function () {
   const usd = (v) => "$" + Math.round(v).toLocaleString("en-US");
@@ -32,7 +32,7 @@
   fetch("/api/dashboard/monthly").then((r) => r.json()).then((d) => { monthlyData = d; drawMonthly(d); });
   fetch("/api/dashboard/by-category").then((r) => r.json()).then((d) => { categoryData = d; drawCategory(d); });
 
-  document.addEventListener("chart-colours", () => {
+  document.addEventListener("chart-colors", () => {
     // chartTheme.refresh() replaces the instances next; these two are drawn fresh here instead.
     monthly.dispose(); category.dispose();
     monthly = echarts.init(document.getElementById("chart-monthly"));

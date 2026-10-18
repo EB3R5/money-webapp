@@ -84,7 +84,7 @@ def budget_for_month(ym: str) -> dict | None:
 
 def pill(row: dict) -> dict:
     """The status pill for a Budget-vs-Actual row: {text, cls}. Text follows the engine's
-    verdict; cls is ok / over / warn / none so the page needs no colour logic of its own."""
+    verdict; cls is ok / over / warn / none so the page needs no color logic of its own."""
     if row["match"] == "actual_only":
         return {"text": "unbudgeted", "cls": "warn"}
     if row["match"] == "budget_only":

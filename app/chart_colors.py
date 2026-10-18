@@ -1,11 +1,11 @@
-"""Chart colours: the six series colours every ECharts view draws from, chosen per user on the
+"""Chart colors: the six series colors every ECharts view draws from, chosen per user on the
 Dashboard's collapsible panel or Settings → Appearance and kept on the user's Profile
 (`chart_colors`, overrides only). The ledger's money-in green and money-out red are not
 among them: those are the pad's ink, not the charts'.
 
 Each page render puts the user's six on `<html>` as `--chart-*` tokens (base.html, from the
 `chart_colors` context processor); `chart-theme.js` reads them from there, so the theme's
-series palette and the explicit colours in dashboard.js, metrics.js and planning-forecast.js
+series palette and the explicit colors in dashboard.js, metrics.js and planning-forecast.js
 all follow."""
 
 import re
@@ -34,7 +34,7 @@ def normalise(raw: dict) -> dict:
         if not value or value == default:
             continue
         if not _HEX.match(value):
-            raise ValueError(f"{role}: {value!r} is not a colour like #4f6b8c")
+            raise ValueError(f"{role}: {value!r} is not a color like #4f6b8c")
         out[role] = value
     return out
 

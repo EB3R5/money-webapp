@@ -4,7 +4,7 @@
 Profile: one row per user, created on demand. `must_change_password` is set on the account
 `bootstrap_admin` seeds from DEFAULT_USER / DEFAULT_PASSWORD and cleared the first time that
 password is changed; the auth gate sends a flagged user to /account until then.
-`chart_colors` holds the user's chart colours as overrides over the defaults."""
+`chart_colors` holds the user's chart colors as overrides over the defaults."""
 
 from django.conf import settings
 from django.db import models

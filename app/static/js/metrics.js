@@ -2,7 +2,7 @@
 // config CRUD. Mutations POST JSON to /api/metrics/savings/* then reload to repaint the
 // server-rendered tables.
 (function () {
-  const C = (role) => window.chartTheme.color(role);   // the user's chart colours (chart-theme.js)
+  const C = (role) => window.chartTheme.color(role);   // the user's chart colors (chart-theme.js)
   const usd = (v) => "$" + Math.round(v).toLocaleString("en-US");
   const pct = (v) => (v * 100).toFixed(1) + "%";
   const year = window.METRICS_YEAR;

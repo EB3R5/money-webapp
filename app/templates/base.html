@@ -12,6 +12,7 @@
   <script src="/static/vendor/ag-grid-community.min.noStyle.js"></script>
 
   <link rel="stylesheet" href="/static/css/app.css?v={{ css_v() }}" />
+  <style nonce="{{ csp_nonce }}">:root { {% for role, hex in chart_colors.items() %}--chart-{{ role }}: {{ hex }}; {% endfor %}}</style>
   <meta name="csrf-token" content="{{ csrf_token }}" />
   <script src="/static/js/csrf.js?v={{ css_v('js/csrf.js') }}"></script>
   <script src="/static/js/ui.js?v={{ css_v('js/ui.js') }}"></script>
@@ -70,6 +71,7 @@
         <summary>Settings</summary>
         {% if request.user.is_superuser %}<a href="/settings/users">Users</a>{% endif %}
         <a href="/settings/feed">Feed</a>
+        <a href="/settings/appearance">Appearance</a>
         <a href="/account">Account</a>
       </details>
     </nav>

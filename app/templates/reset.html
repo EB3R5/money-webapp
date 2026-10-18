@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New password · Money</title>
+  <title>New password · Passbook</title>
   <link rel="icon" type="image/png" href="/static/img/favicon.png" />
   <link rel="stylesheet" href="/static/css/app.css?v={{ css_v() }}" />
 </head>
@@ -11,7 +11,7 @@
   <main class="login">
     <form class="login-card" method="post" action="{{ action }}">
       <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
-      <h1>Money</h1>
+      <h1>Passbook</h1>
       <p class="muted">Choose a new password for <strong>{{ username }}</strong>. Every other session of this account is signed out.</p>
       {% for e in errors %}<p class="login-error" role="alert">{{ e }}</p>{% endfor %}
       <label>New password

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if current %}{{ current.Name }} — {% endif %}Kits — Money{% endblock %}
+{% block title %}{% if current %}{{ current.Name }} — {% endif %}Kits — Passbook{% endblock %}
 
 {% macro money(v) -%}
   {%- if v is none -%}<span class="muted">—</span>{%- else -%}${{ "{:,.0f}".format(v) }}{%- endif -%}

@@ -43,7 +43,7 @@
     const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
     let d = {};
     try { d = await r.json(); } catch (e) { /* non-JSON */ }
-    if (r.status === 401) { d.ok = false; d.error = "Not logged in — log in to Money in this browser and click the bookmark again."; }
+    if (r.status === 401) { d.ok = false; d.error = "Not logged in — log in to Passbook in this browser and click the bookmark again."; }
     return d;
   }
 

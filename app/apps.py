@@ -9,7 +9,7 @@ from django.apps import AppConfig
 class MoneyConfig(AppConfig):
     name = "app"
     label = "money"
-    verbose_name = "Money"
+    verbose_name = "Passbook"
 
     def ready(self):
         from .config import DATA_DIR

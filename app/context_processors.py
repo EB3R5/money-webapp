@@ -1,6 +1,6 @@
 """What every Jinja page render gets beyond Django's own `request` and `csrf_token`: the
 request's CSP nonce for its inline <script>/<style> blocks (app.middleware.SecurityHeadersMiddleware),
-and the user's chart colours, which base.html puts on <html> as --chart-* tokens."""
+and the user's chart colors, which base.html puts on <html> as --chart-* tokens."""
 
 from . import chart_colors as _chart_colors
 

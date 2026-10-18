@@ -1,4 +1,4 @@
-# Chart colours per user: the six series colours as overrides over the defaults (app/chart_colors.py).
+# Chart colors per user: the six series colors as overrides over the defaults (app/chart_colors.py).
 
 from django.db import migrations, models
 

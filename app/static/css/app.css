@@ -32,7 +32,7 @@
   --plum: #5b4a86;           /* planned spend pulled from Future purchases */
   --plum-tint: #ece6f6;
 
-  /* the charts' six series colours; a user's own replace these from base.html */
+  /* the charts' six series colors; a user's own replace these from base.html */
   --chart-net: #4f6b8c; --chart-income: #2f6b4f; --chart-spend: #a4302a;
   --chart-s4: #8a6414; --chart-s5: #5b3fa6; --chart-s6: #5c6670;
 
@@ -886,22 +886,22 @@ table.pivot.projected tfoot tr.net td.flag { color: var(--red-ink); background: 
 .settings-card { max-width: 820px; padding: 16px 20px; border: 1px solid var(--rule); border-radius: var(--radius); background: #fff; }
 .settings-card h2 { margin: 0 0 10px; font-size: 16px; }
 .settings-card h3 { margin: 14px 0 6px; font-size: 14px; }
-/* the chart colours panel (_chart_colours.html): folded on the Dashboard, open in Settings */
-.chart-colours { margin-bottom: 16px; padding: 0; }
-.chart-colours > summary { display: flex; gap: 12px; align-items: baseline; padding: 12px 16px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 600; color: var(--muted); }
-.chart-colours > summary::-webkit-details-marker { display: none; }
-.chart-colours > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--graphite); border-bottom: 1.5px solid var(--graphite); transform: rotate(-45deg); margin-right: 4px; transition: transform .15s; }
-.chart-colours[open] > summary::before { transform: rotate(45deg); }
-.chart-colours > summary .muted { font-weight: 400; }
-.chart-colours-form { padding: 0 16px 14px; }
-.chart-colours-rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 4px 24px; margin: 4px 0 10px; }
-.chart-colour { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.chart-colour input[type=color] { width: 32px; height: 24px; padding: 0; border: 1px solid var(--rule); border-radius: 3px; background: none; }
-.chart-colour-l { flex: 1; }
-.chart-colour-hex { width: 76px; font: 12px ui-monospace, monospace; padding: 3px 4px; border: 1px solid var(--rule); border-radius: 3px; background: var(--sheet); color: var(--ink); }
-.chart-colour-default { border: 0; background: none; color: var(--graphite); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; }
-.chart-colour-default:hover { color: var(--red-ink); }
-.chart-colours-actions { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 13px; }
+/* the chart colors panel (_chart_colors.html): folded on the Dashboard, open in Settings */
+.chart-colors { margin-bottom: 16px; padding: 0; }
+.chart-colors > summary { display: flex; gap: 12px; align-items: baseline; padding: 12px 16px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 600; color: var(--muted); }
+.chart-colors > summary::-webkit-details-marker { display: none; }
+.chart-colors > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--graphite); border-bottom: 1.5px solid var(--graphite); transform: rotate(-45deg); margin-right: 4px; transition: transform .15s; }
+.chart-colors[open] > summary::before { transform: rotate(45deg); }
+.chart-colors > summary .muted { font-weight: 400; }
+.chart-colors-form { padding: 0 16px 14px; }
+.chart-colors-rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 4px 24px; margin: 4px 0 10px; }
+.chart-color { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.chart-color input[type=color] { width: 32px; height: 24px; padding: 0; border: 1px solid var(--rule); border-radius: 3px; background: none; }
+.chart-color-l { flex: 1; }
+.chart-color-hex { width: 76px; font: 12px ui-monospace, monospace; padding: 3px 4px; border: 1px solid var(--rule); border-radius: 3px; background: var(--sheet); color: var(--ink); }
+.chart-color-default { border: 0; background: none; color: var(--graphite); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; }
+.chart-color-default:hover { color: var(--red-ink); }
+.chart-colors-actions { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 13px; }
 .settings-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 10px 0; font-size: 13px; }
 .settings-facts dt { font-weight: 600; } .settings-facts dd { margin: 0; }
 .settings-steps { font-size: 13px; line-height: 1.5; } .settings-steps li { margin-bottom: 8px; }
@@ -975,7 +975,7 @@ table.pivot tfoot tr.grand td { background: var(--sheet); border-top: 2px solid 
 table.pivot .neg, table.t .neg { color: var(--red-ink); }
 .budget-table tbody tr:hover, table.t tbody tr:hover { background: rgba(79, 107, 140, .06); }
 
-/* pills: the colour is the tint, the text its ink */
+/* pills: the color is the tint, the text its ink */
 .pill { border-radius: 999px; font-weight: 600; }
 .pill.ok, .pill-ok, .pill-saved { background: var(--bank-green-tint); color: var(--bank-green); }
 .pill.over, .pill-failed, .pill-skipped_budget, .pill-skipped_unconfigured { background: var(--red-ink-tint); color: var(--red-ink); }

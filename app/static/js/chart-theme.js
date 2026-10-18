@@ -1,10 +1,10 @@
 // The charts' share of the columnar pad: the app's type and ink for every ECharts instance,
-// and the six series colours, read from the --chart-* tokens on <html> (app.css defaults,
+// and the six series colors, read from the --chart-* tokens on <html> (app.css defaults,
 // the user's own from base.html). Loaded right after echarts.min.js; the theme becomes the
 // default so no chart script names it.
-//   chartTheme.color("income")  — a role's current colour, for a series' explicit itemStyle
+//   chartTheme.color("income")  — a role's current color, for a series' explicit itemStyle
 //   chartTheme.refresh()        — re-read the tokens, re-register the theme and redraw every
-//                                 chart made through echarts.init (the colours panel's preview)
+//                                 chart made through echarts.init (the colors panel's preview)
 (function () {
   if (!window.echarts) return;
   const ROLES = ["net", "income", "spend", "s4", "s5", "s6"];
@@ -43,7 +43,7 @@
   const refresh = () => {
     echarts.registerTheme("pad", theme());
     const pending = charts.splice(0);
-    document.dispatchEvent(new CustomEvent("chart-colours"));     // pages that build colours into their options redraw their own
+    document.dispatchEvent(new CustomEvent("chart-colors"));     // pages that build colors into their options redraw their own
     for (const rec of pending) {
       if (!rec.option || !document.contains(rec.el) || rec.inst.isDisposed()) continue;
       rec.inst.dispose();

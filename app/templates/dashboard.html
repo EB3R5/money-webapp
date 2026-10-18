@@ -7,7 +7,7 @@
   <span class="muted">spending overview</span>
 </div>
 
-{% with open=False, next="/dashboard" %}{% include "_chart_colours.html" %}{% endwith %}
+{% with open=False, next="/dashboard" %}{% include "_chart_colors.html" %}{% endwith %}
 
 <div class="chart-grid">
   <div class="card">
@@ -23,5 +23,5 @@
 <script src="/static/vendor/echarts.min.js"></script>
 <script src="/static/js/chart-theme.js?v={{ css_v('js/chart-theme.js') }}"></script>
 <script src="/static/js/dashboard.js?v={{ css_v('js/dashboard.js') }}"></script>
-<script src="/static/js/chart-colours.js?v={{ css_v('js/chart-colours.js') }}"></script>
+<script src="/static/js/chart-colors.js?v={{ css_v('js/chart-colors.js') }}"></script>
 {% endblock %}

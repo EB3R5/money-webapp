@@ -2,7 +2,7 @@
 // balance (ECharts) with event markers and the low point, the callout line, and the events
 // table. Everything shown is an estimate from the ledger; the card says so in its title.
 (function () {
-  const C = (role) => window.chartTheme.color(role);   // the user's chart colours (chart-theme.js)
+  const C = (role) => window.chartTheme.color(role);   // the user's chart colors (chart-theme.js)
   const usd = (v) => (v < 0 ? "−" : "") + "$" + Math.abs(Math.round(v)).toLocaleString("en-US");
   const signed = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + "$" + Math.abs(Math.round(v)).toLocaleString("en-US");
   const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

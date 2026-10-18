@@ -1,4 +1,4 @@
-"""Settings → Appearance: the chart colours panel on its own page, and the one route that
+"""Settings → Appearance: the chart colors panel on its own page, and the one route that
 saves it — the same panel sits folded on the Dashboard and posts here too. The rows the
 panel renders come with every page (the `chart_colors` context processor). `next` says
 where to return to; only a path on this site is honoured."""
@@ -30,5 +30,5 @@ def save_chart_colors(request):
 
 urlpatterns = [
     path("settings/appearance", appearance_page),
-    path("settings/appearance/chart-colours", save_chart_colors),
+    path("settings/appearance/chart-colors", save_chart_colors),
 ]
